@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/text.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/button.css" asp-append-version="true" />
+
+<div class="hero">
+    <div>
+        <h1>Welcome to Fridmak's website!!</h1>
+        <form asp-controller="Home" asp-action="AddFriend" method="post">
+            <button type="submit" class="btn-custom">Add new Friend</button>
+        </form>
+    </div>
+</div>

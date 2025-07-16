@@ -1,0 +1,36 @@
+﻿# Общие правила для Visual Studio и .NET
+[Tt]emp/
+obj/
+bin/
+*.user
+*.suo
+*.bak
+*.cache
+*.orig
+*~.*
+*.sw[a-z]
+TestResults
+
+# Игнорирование временных файлов и папок
+.vs/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Игнорирование конфиденциальных данных
+appsettings.Development.json
+secrets.json
+
+# Файлы, созданные Visual Studio
+*.csproj.Backup.tmp
+*.csproj.Debug.netcoreapp*
+*.csproj.Release.netcoreapp*
+
+# Игнорирование файлов локальной БД
+*.db
+*.mdf
+*.ldf
+
+# Игнорирование файлов, созданных при сборке
+out/
+publish/

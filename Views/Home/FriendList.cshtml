@@ -1,0 +1,31 @@
+﻿@{
+    ViewData["Title"] = "Friend's list";
+}
+
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/lists.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/text.css" asp-append-version="true" />
+
+<div class="card-list-container">
+    <div class="text-center">
+        <h1 class="display-4">Here are people who added Fridmak to their Friends:</h1>
+    </div>
+
+    @if (Model is null)
+    {
+        <p class="no-items">No friends found.</p>
+    }
+    else
+    {
+        foreach (var friend in Model)
+        {
+            <div class="card">
+                <h2 class="card__title">@friend.Name</h2>
+                <div class="card__content">
+                    <p>Age: @friend.Age</p>
+                    <p>Contact: @friend.Contact</p>
+                </div>
+            </div>
+        }
+    }
+</div>

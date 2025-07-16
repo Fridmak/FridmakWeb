@@ -1,0 +1,31 @@
+﻿@{
+    ViewData["Title"] = "Friends add request";
+}
+
+@model TestingAppWeb.Models.Friend
+
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/form.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/button.css" asp-append-version="true" />
+
+<div class="form-container">
+    <h1 class="display-4">You can make your friend request to Fridmak below:</h1>
+    <form asp-action="AddFriendForm" asp-controller="Home" method="post">
+        <div class="form-group">
+            <label asp-for="Name"></label>
+            <input asp-for="Name" class="form-control" placeholder="What's your name?" />
+        </div>
+
+        <div class="form-group mt-4">
+            <label asp-for="Age"></label>
+            <input asp-for="Age" class="form-control" type="number" placeholder="0" />
+        </div>
+
+        <div class="form-group mt-4">
+            <label asp-for="Contact"></label>
+            <input asp-for="Contact" class="form-control" placeholder="Provide us with your contact please" />
+        </div>
+
+        <button class="btn btn-primary mt-4 w-100" type="submit">Send</button>
+    </form>
+</div>
