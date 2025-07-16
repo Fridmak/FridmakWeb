@@ -1,0 +1,27 @@
+﻿@{
+    ViewData["Title"] = "Chat";
+}
+
+@model IEnumerable<TestingAppWeb.Models.ChatMSG>
+
+<h2>Чат</h2>
+
+<div id="chat-container">
+    <ul id="chat-messages">
+        @foreach (var message in Model)
+        {
+            <li>
+                <strong>@message.Sender.Username</strong>
+                <span> (@message.SentAt.ToString("yyyy-MM-dd HH:mm")):</span>
+                <p>@message.MessageText</p>
+            </li>
+        }
+    </ul>
+</div>
+
+<form id="chat-form">
+    <input type="text" id="message" placeholder="Сообщение" required />
+    <button type="submit">Отправить</button>
+</form>
+
+<script type="module" src="~/js/chat-main.js" asp-append-version="true"></script>

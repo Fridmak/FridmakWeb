@@ -7,6 +7,8 @@ namespace TestingAppWeb.Data
 {
     public class AppDbContext : DbContext
     {
+        public DbSet<User> Users { get; set; }
+        public DbSet<ChatMSG> ChatMessages { get; set; }
         public DbSet<Friend> Friends { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
@@ -16,6 +18,11 @@ namespace TestingAppWeb.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<ChatMSG>()
+            .HasOne(m => m.Sender)
+            .WithMany()
+            .HasForeignKey(m => m.SenderId);
         }
     }
 }
