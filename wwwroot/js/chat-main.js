@@ -2,8 +2,6 @@
 import { updateMessageList } from './chat-messages.js';
 import { sendMessageToServer, getMessagesFromServer } from './chat-api.js';
 
-console.log("Скрипт chat-main.js загружен");
-
 const form = document.getElementById('chat-form');
 const messageList = document.getElementById('chat-messages');
 

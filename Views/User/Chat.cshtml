@@ -2,7 +2,7 @@
     ViewData["Title"] = "Chat";
 }
 
-@model IEnumerable<TestingAppWeb.Models.ChatMSG>
+@model IEnumerable<TestingAppWeb.Models.ChatMessageDto>
 
 <h2>Чат</h2>
 
@@ -11,15 +11,16 @@
         @foreach (var message in Model)
         {
             <li>
-                <strong>@message.Sender.Username</strong>
-                <span> (@message.SentAt.ToString("yyyy-MM-dd HH:mm")):</span>
-                <p>@message.MessageText</p>
+                <strong>@message.UserName</strong>
+                <span> (@message.Timestamp.ToString("yyyy-MM-dd HH:mm")):</span>
+                <p>@message.Text</p>
             </li>
         }
     </ul>
 </div>
 
 <form id="chat-form">
+    <input type="text" id="username" placeholder="Имя" required />
     <input type="text" id="message" placeholder="Сообщение" required />
     <button type="submit">Отправить</button>
 </form>

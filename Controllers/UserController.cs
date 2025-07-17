@@ -22,9 +22,7 @@ namespace TestingAppWeb.Controllers
 
         public IActionResult Chat()
         {
-            var messages = _context.ChatMessages
-                .Include(m => m.Sender)
-                .ToList();
+            var messages = FilterMessages();
             return View(messages);
         }
 
@@ -34,12 +32,14 @@ namespace TestingAppWeb.Controllers
         }
 
         [HttpPost]
-        public IActionResult SendMessage([FromBody] ChatMSG message)
+        public IActionResult SendMessage([FromBody] ChatMessageDto message)
         {
-            message.SentAt = DateTime.Now;
-            message.Sender = new User();
-            message.Sender.Username = "Anonim poka"; // ToDo: тут временно
-            _context.ChatMessages.Add(message);
+            var msg = new ChatMSG();
+            msg.SentAt = DateTime.UtcNow;
+            msg.Sender = new User();
+            msg.MessageText = message.Text;
+            msg.Sender.Username = message.UserName;
+            _context.ChatMessages.Add(msg);
             _context.SaveChanges();
             return Json(new { success = true });
         }
@@ -47,15 +47,56 @@ namespace TestingAppWeb.Controllers
         [HttpGet]
         public IActionResult GetMessages()
         {
-            var messages = _context.ChatMessages
-                .Select(m => new {
-                    m.MessageText,
-                    timestamp = m.SentAt,
-                    userName = m.Sender.Username
-                })
-                .ToList();
+            var messages = FilterMessages();
 
             return Json(messages);
+        }
+
+        private List<ChatMessageDto> FilterMessages()
+        {
+            var result = new List<ChatMessageDto>();
+
+            try
+            {
+                var allMessages = _context.ChatMessages.ToList();
+
+                foreach (var msg in allMessages)
+                {
+                    if (msg.Sender == null)
+                    {
+                        _logger.LogWarning("Сообщение пропущено: Отправитель не найден.");
+                        continue;
+                    }
+
+                    string text = msg.MessageText;
+                    DateTime timestamp = msg.SentAt;
+                    string username = msg.Sender.Username;
+
+                    bool isValid = !string.IsNullOrEmpty(text) &&
+                                   timestamp != default &&
+                                   !string.IsNullOrEmpty(username);
+
+                    if (!isValid)
+                    {
+                        _logger.LogError($"Некорректное сообщение: {text}, {timestamp}, {username}");
+                        continue;
+                    }
+
+                    result.Add(new ChatMessageDto
+                    {
+                        Text = text,
+                        Timestamp = timestamp,
+                        UserName = username
+                    });
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при фильтрации сообщений");
+                return result;
+            }
         }
     }
 }

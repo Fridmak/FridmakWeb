@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 
 namespace TestingAppWeb.Models
 {
@@ -11,7 +12,7 @@ namespace TestingAppWeb.Models
         [Required]
         public User Sender { get; set; }
         [Required]
-        public string? MessageText { get; set; }
+        public string MessageText { get; set; }
         [Required]
         public DateTime SentAt { get; set; }
     }
