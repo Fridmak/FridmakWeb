@@ -4,11 +4,10 @@ import { sendMessageToServer, getMessagesFromServer } from './api.js';
 
 const form = document.getElementById('chat-form');
 const chatContainer = document.querySelector('.chat-container');
-const messageList = document.getElementById('chat-messages');
 
 async function sendMessage(text) {
-    await sendMessageToServer(text);
-    scrollDownSmooth(chatContainer);
+    const newMessage = await sendMessageToServer(text);
+    scrollDown(chatContainer);
 }
 
 async function loadMessages() {
@@ -16,8 +15,9 @@ async function loadMessages() {
     updateMessageList(chatContainer, messages);
 }
 
-setupChatForm(form, messageList, sendMessage, loadMessages);
+setupChatForm(form, chatContainer, sendMessage, scrollDownSmooth);
 
-setInterval(loadMessages, 1000);
+setInterval(loadMessages, 500);
 
-scrollDown(chatContainer)
+await loadMessages();
+scrollDown(chatContainer);

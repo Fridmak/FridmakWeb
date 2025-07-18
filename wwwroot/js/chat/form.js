@@ -1,14 +1,22 @@
-﻿export function setupChatForm(form, messageList, sendMessageFn, loadMessagesFn) {
+﻿export function setupChatForm(form, chatContainer, sendMessageFn, scrollDown) {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const text = document.getElementById('message').value.trim();
+        const input = document.getElementById('message');
+        const text = input.value.trim();
 
-        if (!text)
-            return;
+        if (!text) return;
 
-        await sendMessageFn(text);
-        document.getElementById('message').value = '';
-        await loadMessagesFn(messageList);
+        const button = form.querySelector('button');
+        button.disabled = true;
+
+        try {
+            await sendMessageFn(text);
+            input.value = '';
+        } finally {
+            button.disabled = false;
+        }
+
+        scrollDown(chatContainer);
     });
 }

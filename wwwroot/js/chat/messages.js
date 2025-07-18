@@ -1,8 +1,8 @@
 ﻿export function updateMessageList(chatContainer, messages) {
-    const wasAtBottom =
-        chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 1;
-
     const messageList = chatContainer.querySelector('#chat-messages');
+
+    const wasAtBottom = isAtBottom(chatContainer);
+
     messageList.innerHTML = '';
 
     messages.forEach(msg => {
@@ -17,16 +17,17 @@
             <small> (${formattedDate})</small>:
             <p>${msg.text}</p>
         `;
-
         messageList.appendChild(li);
     });
 
-    const atBottom = wasAtBottom ||
-        chatContainer.scrollHeight - chatContainer.clientHeight <= 1;
-
-    if (atBottom) {
+    if (wasAtBottom) {
         scrollDownSmooth(chatContainer);
     }
+}
+
+function isAtBottom(element) {
+    const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight <= 10;
+    return atBottom;
 }
 
 export function scrollDown(chatContainer) {

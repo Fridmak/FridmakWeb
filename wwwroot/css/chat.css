@@ -6,7 +6,6 @@
     background-color: #f9f9f9;
     margin-bottom: 10px;
     box-sizing: border-box;
-    scroll-behavior: smooth;
 }
 
 #chat-messages {
