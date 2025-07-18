@@ -14,6 +14,11 @@ namespace TestingAppWeb.Models
         public string Password { get; set; }
 
         [Required]
+        [DataType(DataType.Password)]
+        [Display(Name = "ConfirmPassword")]
+        public string ConfirmPassword { get; set; }
+
+        [Required]
         [DataType(DataType.EmailAddress)]
         [Display(Name = "email")]
         public string Email { get; set; }

@@ -30,12 +30,28 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="FriendList">FriendList</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="User" asp-action="Chat">Chat</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Chat" asp-action="Index">Chat</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="User" asp-action="AdminPanel">Admin Panel</a>
                         </li>
                     </ul>
+                    <ul class="navbar-nav">
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="User" asp-action="Logout">Выйти</a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="User" asp-action="Login">Войти</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="User" asp-action="Register">Регистрация</a>
+                        </li>
+                    }
                 </div>
             </div>
         </nav>

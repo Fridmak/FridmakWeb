@@ -68,10 +68,42 @@ namespace TestingAppWeb.Controllers
             return View(model);
         }
 
+        [HttpGet]
         public IActionResult Register()
         {
-            Console.WriteLine("ToDo"); // ToDo reg
             return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var existingUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Username == model.Username);
+
+                if (existingUser != null)
+                {
+                    ModelState.AddModelError("Username", "Such user already exists");
+                    return View(model);
+                }
+
+                var user = new User
+                {
+                    Username = model.Username,
+                    Email = model.Email,
+                    PasswordHash = GetPasswordHash(model.Password),
+                    Role = "User"
+                };
+
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction("Login");
+            }
+
+            return View(model);
         }
 
         public async Task<IActionResult> Logout()
