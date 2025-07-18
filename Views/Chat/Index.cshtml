@@ -4,17 +4,19 @@
 
 @model IEnumerable<TestingAppWeb.Models.ChatMessageDto>
 
+<link rel="stylesheet" href="~/css/chat.css" asp-append-version="true" />
+
 <h2>Чат</h2>
 
 @if (User.Identity.IsAuthenticated)
 {
-    <div id="chat-container">
+    <div class="chat-container">
         <ul id="chat-messages">
             @foreach (var message in Model)
             {
                 <li>
                     <strong>@message.UserName</strong>
-                    <span> (@message.Timestamp.ToString("yyyy-MM-dd HH:mm")):</span>
+                    <small> (@message.Timestamp.ToString("yyyy-MM-dd HH:mm")):</small>
                     <p>@message.Text</p>
                 </li>
             }

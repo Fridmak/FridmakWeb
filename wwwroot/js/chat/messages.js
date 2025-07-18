@@ -1,19 +1,16 @@
-﻿export function updateMessageList(messageList, messages) {
+﻿export function updateMessageList(chatContainer, messages) {
+    const wasAtBottom =
+        chatContainer.scrollHeight - chatContainer.clientHeight <= chatContainer.scrollTop + 1;
+
+    const messageList = chatContainer.querySelector('#chat-messages');
     messageList.innerHTML = '';
 
     messages.forEach(msg => {
         const li = document.createElement('li');
         li.classList.add('chat-message');
 
-        // Форматируем дату вручную
         const date = new Date(msg.timestamp);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Месяцы с 0
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-
-        const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`;
+        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
         li.innerHTML = `
             <strong>${msg.userName}</strong>
@@ -24,5 +21,20 @@
         messageList.appendChild(li);
     });
 
-    messageList.scrollTop = messageList.scrollHeight;
+    const atBottom = wasAtBottom ||
+        chatContainer.scrollHeight - chatContainer.clientHeight <= 1;
+
+    if (atBottom) {
+        scrollDownSmooth(chatContainer);
+    }
+}
+
+export function scrollDown(chatContainer) {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+export function scrollDownSmooth(chatContainer) {
+    chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: 'smooth'
+    });
 }

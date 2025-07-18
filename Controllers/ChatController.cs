@@ -9,6 +9,7 @@ namespace TestingAppWeb.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly AppDbContext _context;
+        private readonly int _messagesToShow = 500;
 
         public ChatController(ILogger<HomeController> logger, AppDbContext context)
         {
@@ -47,50 +48,31 @@ namespace TestingAppWeb.Controllers
 
         private List<ChatMessageDto> FilterMessages()
         {
-            var result = new List<ChatMessageDto>();
-
             try
             {
-                var allMessages = _context.ChatMessages
+                var result = _context.ChatMessages
                     .Include(m => m.Sender)
+                    .Where(m => m.SenderId != null &&
+                                !string.IsNullOrEmpty(m.MessageText) &&
+                                m.SentAt != default(DateTime) &&
+                                !string.IsNullOrEmpty(m.Sender.Username))
+                    .OrderByDescending(m => m.SentAt)
+                    .Take(_messagesToShow)
+                    .Select(m => new ChatMessageDto
+                    {
+                        Text = m.MessageText,
+                        Timestamp = m.SentAt,
+                        UserName = m.Sender.Username
+                    })
+                    .Reverse()
                     .ToList();
-
-                foreach (var msg in allMessages)
-                {
-                    if (msg.SenderId == null)
-                    {
-                        _logger.LogWarning("Error handling message");
-                        continue;
-                    }
-
-                    string text = msg.MessageText;
-                    DateTime timestamp = msg.SentAt;
-                    string userName = msg.Sender.Username;
-
-                    bool isValid = !string.IsNullOrEmpty(text) &&
-                                   timestamp != default &&
-                                   !string.IsNullOrEmpty(userName);
-
-                    if (!isValid)
-                    {
-                        _logger.LogError($"Wrong data catched: {text}, {timestamp}, {userName}");
-                        continue;
-                    }
-
-                    result.Add(new ChatMessageDto
-                    {
-                        Text = text,
-                        Timestamp = timestamp,
-                        UserName = userName
-                    });
-                }
 
                 return result;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error parsing messages");
-                return result;
+                return new List<ChatMessageDto>();
             }
         }
     }
