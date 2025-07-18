@@ -1,6 +1,6 @@
-﻿import { setupChatForm } from './chat-form.js';
-import { updateMessageList } from './chat-messages.js';
-import { sendMessageToServer, getMessagesFromServer } from './chat-api.js';
+﻿import { setupChatForm } from './form.js';
+import { updateMessageList } from './messages.js';
+import { sendMessageToServer, getMessagesFromServer } from './api.js';
 
 const form = document.getElementById('chat-form');
 const messageList = document.getElementById('chat-messages');

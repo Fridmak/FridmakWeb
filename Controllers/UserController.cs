@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TestingAppWeb.Data;
 using TestingAppWeb.Models;
 
@@ -7,96 +10,89 @@ namespace TestingAppWeb.Controllers
 {
     public class UserController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly AppDbContext _context;
+        private AppDbContext _context;
 
-        public UserController(ILogger<HomeController> logger, AppDbContext context)
+        public UserController(AppDbContext context)
         {
-            _logger = logger;
             _context = context;
-        }
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Chat()
-        {
-            var messages = FilterMessages();
-            return View(messages);
-        }
-
-        public IActionResult AdminPanel()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public IActionResult SendMessage([FromBody] ChatMessageDto message)
-        {
-            var msg = new ChatMSG();
-            msg.SentAt = DateTime.UtcNow;
-            msg.Sender = new User();
-            msg.MessageText = message.Text;
-            msg.Sender.Username = message.UserName;
-            _context.ChatMessages.Add(msg);
-            _context.SaveChanges();
-            return Json(new { success = true });
         }
 
         [HttpGet]
-        public IActionResult GetMessages()
+        public IActionResult Login(string returnUrl = null)
         {
-            var messages = FilterMessages();
+            var model = new LoginViewModel
+            {
+                ReturnUrl = returnUrl
+            };
 
-            return Json(messages);
+            return View(model);
         }
 
-        private List<ChatMessageDto> FilterMessages()
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
         {
-            var result = new List<ChatMessageDto>();
-
-            try
+            if (ModelState.IsValid)
             {
-                var allMessages = _context.ChatMessages.ToList();
+                var user = _context.Users.FirstOrDefault(u => u.Username == model.Username);
 
-                foreach (var msg in allMessages)
+                if (user != null && VerifyPassword(model.Password, user.PasswordHash))
                 {
-                    if (msg.Sender == null)
+                    var claims = new List<Claim>
                     {
-                        _logger.LogWarning("Сообщение пропущено: Отправитель не найден.");
-                        continue;
-                    }
+                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                        new Claim(ClaimTypes.Name, user.Username),
+                        new Claim(ClaimTypes.Email, user.Email),
+                        new Claim(ClaimTypes.Role, user.Role)
+                    };
 
-                    string text = msg.MessageText;
-                    DateTime timestamp = msg.SentAt;
-                    string username = msg.Sender.Username;
+                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    var principal = new ClaimsPrincipal(identity);
 
-                    bool isValid = !string.IsNullOrEmpty(text) &&
-                                   timestamp != default &&
-                                   !string.IsNullOrEmpty(username);
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        principal,
+                        new AuthenticationProperties
+                        {
+                            IsPersistent = model.RememberMe
+                        });
 
-                    if (!isValid)
-                    {
-                        _logger.LogError($"Некорректное сообщение: {text}, {timestamp}, {username}");
-                        continue;
-                    }
-
-                    result.Add(new ChatMessageDto
-                    {
-                        Text = text,
-                        Timestamp = timestamp,
-                        UserName = username
-                    });
+                    if (Url.IsLocalUrl(returnUrl))
+                        return Redirect(returnUrl);
+                    else
+                        return RedirectToAction("Index", "Home");                 
                 }
 
-                return result;
+                ModelState.AddModelError(string.Empty, "Wrong password or username");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при фильтрации сообщений");
-                return result;
-            }
+
+            return View(model);
+        }
+
+        public IActionResult Register()
+        {
+            Console.WriteLine("ToDo"); // ToDo reg
+            return View();
+        }
+
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Index", "Home");
+        }
+
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
+        private bool VerifyPassword(string password, string passwordHash)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
+        }
+
+        private string GetPasswordHash(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
     }
 }

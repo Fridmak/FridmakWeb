@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace TestingAppWeb.Models
 {
@@ -10,7 +9,7 @@ namespace TestingAppWeb.Models
         [Required]
         public int SenderId { get; set; }
         [Required]
-        public User Sender { get; set; }
+        public string Sender { get; set; }
         [Required]
         public string MessageText { get; set; }
         [Required]
