@@ -22,17 +22,12 @@ namespace TestingAppWeb.Controllers
             return View(messages);
         }
 
-        public IActionResult AdminPanel()
-        {
-            return View();
-        }
-
         [HttpPost]
         public IActionResult SendMessage([FromBody] ChatMessageDto message)
         {
             var msg = new ChatMSG();
             msg.SentAt = DateTime.UtcNow;
-            msg.Sender = message.UserName;
+            msg.Sender = _context.Users.FirstOrDefault(user => user.Username == message.UserName);
             msg.MessageText = message.Text;
             _context.ChatMessages.Add(msg);
             _context.SaveChanges();
@@ -67,7 +62,7 @@ namespace TestingAppWeb.Controllers
 
                     string text = msg.MessageText;
                     DateTime timestamp = msg.SentAt;
-                    string userName = msg.Sender;
+                    string userName = msg.Sender.Username;
 
                     bool isValid = !string.IsNullOrEmpty(text) &&
                                    timestamp != default &&

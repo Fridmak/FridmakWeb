@@ -17,6 +17,11 @@ namespace TestingAppWeb.Controllers
             _context = context;
         }
 
+        public IActionResult AdminPanel()
+        {
+            return View();
+        }
+
         [HttpGet]
         public IActionResult Login(string returnUrl = null)
         {
@@ -33,7 +38,7 @@ namespace TestingAppWeb.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = _context.Users.FirstOrDefault(u => u.Username == model.Username);
+                var user = _context.Users.FirstOrDefault(u => u.Username == model.UserName);
 
                 if (user != null && VerifyPassword(model.Password, user.PasswordHash))
                 {

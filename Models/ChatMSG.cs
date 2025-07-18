@@ -9,7 +9,7 @@ namespace TestingAppWeb.Models
         [Required]
         public int SenderId { get; set; }
         [Required]
-        public string Sender { get; set; }
+        public User Sender { get; set; }
         [Required]
         public string MessageText { get; set; }
         [Required]

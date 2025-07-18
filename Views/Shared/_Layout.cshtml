@@ -40,13 +40,16 @@
                     @if (User.Identity.IsAuthenticated)
                     {
                         <li class="nav-item">
+                            <span class="nav-link text-dark">Здравствуйте, @User.Identity.Name</span>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="User" asp-action="Logout">Выйти</a>
                         </li>
                     }
                     else
                     {
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="User" asp-action="Login">Войти</a>
+                            <a class="nav-link text-dark" asp-controller="User" asp-action="Login" asp-route-returnUrl="/Home/Index">Войти</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="User" asp-action="Register">Регистрация</a>
