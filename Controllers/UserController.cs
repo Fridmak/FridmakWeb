@@ -23,7 +23,7 @@ namespace TestingAppWeb.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login(string returnUrl = null)
+        public IActionResult Login(string returnUrl = "/Home/Index")
         {
             var model = new LoginViewModel
             {
@@ -34,7 +34,7 @@ namespace TestingAppWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = "/Home/Index")
         {
             if (ModelState.IsValid)
             {

@@ -1,8 +1,8 @@
-﻿export async function sendMessageToServer(user, text) {
+﻿export async function sendMessageToServer(text) {
     await fetch('/Chat/SendMessage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Text: text , UserName : user})
+        body: JSON.stringify({ Text: text })
     });
 }
 export async function getMessagesFromServer() {

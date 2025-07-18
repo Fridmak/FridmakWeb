@@ -5,8 +5,8 @@ import { sendMessageToServer, getMessagesFromServer } from './api.js';
 const form = document.getElementById('chat-form');
 const messageList = document.getElementById('chat-messages');
 
-async function sendMessage(user, text) {
-    await sendMessageToServer(user, text);
+async function sendMessage(text) {
+    await sendMessageToServer(text);
 }
 
 async function loadMessages() {

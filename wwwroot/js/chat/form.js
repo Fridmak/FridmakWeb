@@ -3,11 +3,11 @@
         e.preventDefault();
 
         const text = document.getElementById('message').value.trim();
-        const user = document.getElementById('username').value.trim();
 
-        if (!text || !user) return;
+        if (!text)
+            return;
 
-        await sendMessageFn(user, text);
+        await sendMessageFn(text);
         document.getElementById('message').value = '';
         await loadMessagesFn(messageList);
     });

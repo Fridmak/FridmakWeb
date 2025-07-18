@@ -25,9 +25,12 @@ namespace TestingAppWeb.Controllers
         [HttpPost]
         public IActionResult SendMessage([FromBody] ChatMessageDto message)
         {
+            if (!User.Identity.IsAuthenticated )
+                return RedirectToAction("Login", "User");
+
             var msg = new ChatMSG();
             msg.SentAt = DateTime.UtcNow;
-            msg.Sender = _context.Users.FirstOrDefault(user => user.Username == message.UserName);
+            msg.Sender = _context.Users.FirstOrDefault(user => user.Username == User.Identity.Name);
             msg.MessageText = message.Text;
             _context.ChatMessages.Add(msg);
             _context.SaveChanges();
