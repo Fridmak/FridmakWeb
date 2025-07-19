@@ -4,29 +4,44 @@
 
 @model IEnumerable<TestingAppWeb.Models.ChatMessageDto>
 
-<link rel="stylesheet" href="~/css/chat.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/button.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/container.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/form.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/message.css" asp-append-version="true" />
+
 
 <h2>Чат</h2>
 
 @if (User.Identity.IsAuthenticated)
 {
-    <div class="chat-container">
-        <ul id="chat-messages">
-            @foreach (var message in Model)
-            {
-                <li>
-                    <strong>@message.UserName</strong>
-                    <small> (@message.Timestamp.ToString("yyyy-MM-dd HH:mm")):</small>
-                    <p>@message.Text</p>
-                </li>
-            }
-        </ul>
-    </div>
+    <div class="chat-wrapper">
+        <div class="chat-container" id="chat-container">
+            <ul id="chat-messages">
+                @foreach (var message in Model)
+                {
+                    <li class="chat-message">
+                        <div class="message-content">
+                            <strong>@message.UserName</strong>
+                            <small> (@message.Timestamp.ToString("yyyy-MM-dd HH:mm")):</small>
+                            <p>@message.Text</p>
+                        </div>
 
-    <form id="chat-form">
-        <input type="text" id="message" placeholder="Сообщение" required />
-        <button type="submit">Отправить</button>
-    </form>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <button class="message-options" title="Действия">⋯</button>
+                        }
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <button id="scroll-down-btn" type="button">↓</button>
+
+        <form id="chat-form">
+            <input type="text" id="message" placeholder="Сообщение" required />
+            <button type="submit">Отправить</button>
+        </form>
+    </div>
 }
 else
 {
@@ -35,4 +50,7 @@ else
     </div>
 }
 
+<script type="text/javascript">
+    const isAdmin = @((User.IsInRole("Admin")) ? "true" : "false");
+</script>
 <script type="module" src="~/js/chat/main.js" asp-append-version="true"></script>

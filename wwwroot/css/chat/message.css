@@ -1,0 +1,38 @@
+﻿.chat-message {
+    position: relative; /* Контейнер для absolute-позиционирования кнопки */
+    background-color: #f1f1f1;
+    padding: 10px 15px;
+    border-radius: 8px;
+    word-wrap: break-word;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: auto;
+}
+
+.message-content {
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    min-height: auto;
+    width: 100%; /* Занимает всю ширину, чтобы кнопка не мешала */
+}
+
+.message-options {
+    position: absolute;
+    top: 10px; /* Отступ сверху */
+    right: 10px; /* Прижимаем к правому краю */
+    z-index: 10;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+    .message-options:hover {
+        color: #333;
+    }

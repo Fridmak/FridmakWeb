@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -17,6 +18,7 @@ namespace TestingAppWeb.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "Admin")]
         public IActionResult AdminPanel()
         {
             return View();

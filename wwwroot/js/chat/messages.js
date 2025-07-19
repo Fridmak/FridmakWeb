@@ -1,9 +1,8 @@
 ﻿export function updateMessageList(chatContainer, messages) {
     const messageList = chatContainer.querySelector('#chat-messages');
-
     const wasAtBottom = isAtBottom(chatContainer);
 
-    messageList.innerHTML = '';
+    messageList.innerHTML = ''; // Очистка списка
 
     messages.forEach(msg => {
         const li = document.createElement('li');
@@ -12,11 +11,40 @@
         const date = new Date(msg.timestamp);
         const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-        li.innerHTML = `
-            <strong>${msg.userName}</strong>
-            <small> (${formattedDate})</small>:
-            <p>${msg.text}</p>
-        `;
+        const div = document.createElement('div');
+        div.classList.add('message-content');
+
+        const strong = document.createElement('strong');
+        strong.textContent = msg.userName;
+
+        const small = document.createElement('small');
+        small.textContent = ` (${formattedDate}):`;
+
+        const p = document.createElement('p');
+        p.textContent = msg.text;
+
+        div.appendChild(strong);
+        div.appendChild(small);
+        div.appendChild(document.createTextNode('\u00A0')); // неразрывный пробел
+        div.appendChild(p);
+
+        if (isAdmin) {
+            const btn = document.createElement('button');
+            btn.classList.add('message-options');
+            btn.title = 'Действия';
+            btn.textContent = '⋯';
+
+            // Пример стиля, если нужно (можно через CSS)
+            btn.style.marginLeft = '10px';
+
+            btn.addEventListener('click', () => {
+                console.log('Клик по кнопке действий', msg);
+            });
+
+            div.appendChild(btn);
+        }
+
+        li.appendChild(div);
         messageList.appendChild(li);
     });
 
@@ -24,8 +52,7 @@
         scrollDownSmooth(chatContainer);
     }
 }
-
-function isAtBottom(element) {
+export function isAtBottom(element) {
     const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight <= 10;
     return atBottom;
 }
