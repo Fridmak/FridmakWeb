@@ -1,6 +1,7 @@
 ﻿import { setupChatForm } from './form.js';
 import { updateMessageList, scrollDown, scrollDownSmooth, isAtBottom } from './messages.js';
 import { sendMessageToServer, getMessagesFromServer } from './api.js';
+import { addEditToContainer } from './edit_message.js';
 
 const form = document.getElementById('chat-form');
 const chatContainer = document.querySelector('.chat-container');
@@ -32,3 +33,5 @@ setInterval(toggleScrollButtonVisibility, 700);
 scrollButton.addEventListener('click', () => {
     scrollDownSmooth(chatContainer);
 });
+
+addEditToContainer(chatContainer);

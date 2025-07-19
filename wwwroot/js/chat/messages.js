@@ -2,7 +2,7 @@
     const messageList = chatContainer.querySelector('#chat-messages');
     const wasAtBottom = isAtBottom(chatContainer);
 
-    messageList.innerHTML = ''; // Очистка списка
+    messageList.innerHTML = '';
 
     messages.forEach(msg => {
         const li = document.createElement('li');
@@ -13,6 +13,7 @@
 
         const div = document.createElement('div');
         div.classList.add('message-content');
+        div.dataset.id = msg.messageId;
 
         const strong = document.createElement('strong');
         strong.textContent = msg.userName;
@@ -25,7 +26,7 @@
 
         div.appendChild(strong);
         div.appendChild(small);
-        div.appendChild(document.createTextNode('\u00A0')); // неразрывный пробел
+        div.appendChild(document.createTextNode('\u00A0'));
         div.appendChild(p);
 
         if (isAdmin) {
@@ -33,9 +34,6 @@
             btn.classList.add('message-options');
             btn.title = 'Действия';
             btn.textContent = '⋯';
-
-            // Пример стиля, если нужно (можно через CSS)
-            btn.style.marginLeft = '10px';
 
             btn.addEventListener('click', () => {
                 console.log('Клик по кнопке действий', msg);

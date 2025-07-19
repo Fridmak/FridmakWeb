@@ -1,7 +1,7 @@
 ﻿.chat-message {
-    position: relative; /* Контейнер для absolute-позиционирования кнопки */
+    position: relative;
     background-color: #f1f1f1;
-    padding: 10px 15px;
+    padding: 10px 10px;
     border-radius: 8px;
     word-wrap: break-word;
     margin-bottom: 10px;
@@ -17,13 +17,13 @@
     border-radius: 6px;
     margin-bottom: 10px;
     min-height: auto;
-    width: 100%; /* Занимает всю ширину, чтобы кнопка не мешала */
+    width: 100%;
 }
 
 .message-options {
     position: absolute;
-    top: 10px; /* Отступ сверху */
-    right: 10px; /* Прижимаем к правому краю */
+    top: 10px;
+    right: 10px;
     z-index: 10;
     background: none;
     border: none;
