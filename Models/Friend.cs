@@ -10,5 +10,6 @@ namespace TestingAppWeb.Models
         public string? Name { get; set; }
         public int Age { get; set; }
         public string? Contact { get; set; }
+        public bool Approved { get; set; }
     }
 }

@@ -4,24 +4,44 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using TestingAppWeb.Data;
+using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 
 namespace TestingAppWeb.Controllers
 {
     public class UserController : Controller
     {
-        private AppDbContext _context;
+        private readonly IUserService _userService;
 
-        public UserController(AppDbContext context)
+        public UserController(IUserService userService)
         {
-            _context = context;
+            _userService = userService;
         }
 
         [Authorize(Roles = "Admin")]
-        public IActionResult AdminPanel()
+        public async Task<IActionResult> AdminPanel()
         {
-            return View();
+            var friendsToApprove = await _userService.GetFriendsToApproveAsync();
+
+            return View(friendsToApprove);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> AcceptFriend(int id)
+        {
+            var success = await _userService.AcceptFriendAsync(id);
+            return RedirectToAction("AdminPanel");
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> RejectFriend(int id)
+        {
+            var success = await _userService.RejectFriendAsync(id);
+            return RedirectToAction("AdminPanel");
         }
 
         [HttpGet]
@@ -40,9 +60,9 @@ namespace TestingAppWeb.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = _context.Users.FirstOrDefault(u => u.Username == model.UserName);
+                var user = await _userService.GetUserByUsernameAsync(model.UserName);
 
-                if (user != null && VerifyPassword(model.Password, user.PasswordHash))
+                if (user != null && _userService.VerifyPassword(model.Password, user.PasswordHash))
                 {
                     var claims = new List<Claim>
                     {
@@ -66,7 +86,7 @@ namespace TestingAppWeb.Controllers
                     if (Url.IsLocalUrl(returnUrl))
                         return Redirect(returnUrl);
                     else
-                        return RedirectToAction("Index", "Home");                 
+                        return RedirectToAction("Index", "Home");
                 }
 
                 ModelState.AddModelError(string.Empty, "Wrong password or username");
@@ -87,27 +107,14 @@ namespace TestingAppWeb.Controllers
         {
             if (ModelState.IsValid)
             {
-                var existingUser = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Username == model.Username);
+                var success = await _userService.RegisterUserAsync(model);
 
-                if (existingUser != null)
+                if (success)
                 {
-                    ModelState.AddModelError("Username", "Such user already exists");
-                    return View(model);
+                    return RedirectToAction("Login");
                 }
 
-                var user = new User
-                {
-                    Username = model.Username,
-                    Email = model.Email,
-                    PasswordHash = GetPasswordHash(model.Password),
-                    Role = "User"
-                };
-
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction("Login");
+                ModelState.AddModelError("Username", "Such user already exists");
             }
 
             return View(model);
@@ -115,6 +122,7 @@ namespace TestingAppWeb.Controllers
 
         public async Task<IActionResult> Logout()
         {
+            await _userService.LogoutAsync(User.Identity.Name);
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
@@ -122,16 +130,6 @@ namespace TestingAppWeb.Controllers
         public IActionResult AccessDenied()
         {
             return View();
-        }
-
-        private bool VerifyPassword(string password, string passwordHash)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
-        }
-
-        private string GetPasswordHash(string password)
-        {
-            return BCrypt.Net.BCrypt.HashPassword(password);
         }
     }
 }

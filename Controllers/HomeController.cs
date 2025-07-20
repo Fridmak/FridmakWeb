@@ -1,19 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using TestingAppWeb.Data;
+using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 
 namespace TestingAppWeb.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly AppDbContext _context;
+        private readonly IHomeService _homeService;
 
-        public HomeController(ILogger<HomeController> logger, AppDbContext context)
+        public HomeController(IHomeService homeService)
         {
-            _logger = logger;
-            _context = context;
+            _homeService = homeService;
         }
 
         public IActionResult Index()
@@ -26,9 +26,10 @@ namespace TestingAppWeb.Controllers
             return View();
         }
 
-        public IActionResult FriendList()
+        public async Task<IActionResult> FriendList()
         {
-            var friends = _context.Friends.ToList();
+            var friends = await _homeService.GetFriendListAsync();
+
             return View(friends);
         }
 
@@ -38,16 +39,24 @@ namespace TestingAppWeb.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddFriendForm(Friend friend)
+        public async Task<IActionResult> AddFriendForm(Friend friend)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _context.Friends.Add(friend);
-                _context.SaveChanges();
-                return RedirectToAction("Index");
+                return View(friend);
             }
 
-            return View("Add", friend);
+            var success = await _homeService.AddFriendRequestAsync(friend);
+
+            if (success)
+            {
+                return RedirectToAction("FriendList");
+            }
+            else
+            {
+                ModelState.AddModelError("", "Unable to add friend.");
+                return View(friend);
+            }
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

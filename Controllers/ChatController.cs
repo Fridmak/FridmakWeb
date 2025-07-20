@@ -1,120 +1,72 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
+using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
+using TestingAppWeb.Services;
 
 namespace TestingAppWeb.Controllers
 {
     public class ChatController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly AppDbContext _context;
-        private readonly int _messagesToShow = 500;
+        private readonly IChatService _chatService;
 
-        public ChatController(ILogger<HomeController> logger, AppDbContext context)
+        public ChatController(IChatService chatService)
         {
-            _logger = logger;
-            _context = context;
+            _chatService = chatService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var messages = FilterMessages();
+            var messages = await _chatService.GetRecentMessagesAsync();
             return View(messages);
         }
 
         [HttpPost]
-        public IActionResult EditMessage([FromBody] EditMessageRequest request)
+        public async Task<IActionResult> EditMessage([FromBody] EditMessageRequest request)
         {
             if (request == null)
             {
                 return BadRequest(new { success = false, error = "Invalid request" });
             }
 
-            var msg = _context.ChatMessages
-                .FirstOrDefault(m => m.Id == request.Id);
+            var success = await _chatService.EditMessageAsync(request);
 
-            if (msg == null)
+            if (success)
             {
-                return Ok(new { success = false, error = "Message not found" });
-            }
-
-            if (request.Delete)
-            {
-                _context.Remove(msg);
-            }
-
-            var newText = request.Delete ? "DELETED" : request.Message;
-            var commet = request.Delete ? $"DELETED: Time={DateTime.Now} | Comment={request.Message}" : request.Message;
-            _logger.LogInformation($"Message edited: ID={msg.Id}, OldText={msg.MessageText}, NewText={newText}, Comment={request.Comment}");
-            msg.MessageText = request.Message;
-
-            try
-            {
-                _context.SaveChanges();
-
                 return Ok(new { success = true });
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogError(ex, "Error occurred while editing message with ID={Id}", request.Id);
                 return StatusCode(500, new { success = false, error = "Internal server error" });
             }
         }
 
         [HttpPost]
-        public IActionResult SendMessage([FromBody] ChatMessageDto message)
+        public async Task<IActionResult> SendMessage([FromBody] ChatMessageDto messageDto)
         {
-            if (!User.Identity.IsAuthenticated )
-                return RedirectToAction("Login", "User");
+            if (!User.Identity.IsAuthenticated)
+                return Unauthorized();
 
-            var msg = new ChatMSG();
-            msg.SentAt = DateTime.UtcNow;
-            msg.Sender = _context.Users.FirstOrDefault(user => user.Username == User.Identity.Name);
-            msg.MessageText = message.Text;
-            _context.ChatMessages.Add(msg);
-            _context.SaveChanges();
+            var username = User.Identity.Name;
 
-            return Json(new { success = true });
+            var success = await _chatService.SendMessageAsync(messageDto, username);
+
+            if (success)
+            {
+                return Ok(new { success = true });
+            }
+            else
+            {
+                return StatusCode(500, new { success = false, error = "Failed to send message" });
+            }
         }
 
         [HttpGet]
-        public IActionResult GetMessages()
+        public async Task<IActionResult> GetMessages()
         {
-            var messages = FilterMessages();
-
+            var messages = await _chatService.GetRecentMessagesAsync();
             return Json(messages);
-        }
-
-        private List<ChatMessageDto> FilterMessages()
-        {
-            try
-            {
-                var result = _context.ChatMessages
-                    .Include(m => m.Sender)
-                    .Where(m => m.SenderId != null &&
-                                !string.IsNullOrEmpty(m.MessageText) &&
-                                m.SentAt != default(DateTime) &&
-                                !string.IsNullOrEmpty(m.Sender.Username))
-                    .OrderByDescending(m => m.SentAt)
-                    .Take(_messagesToShow)
-                    .Select(m => new ChatMessageDto
-                    {
-                        Text = m.MessageText,
-                        Timestamp = m.SentAt,
-                        UserName = m.Sender.Username,
-                        MessageId = m.Id
-                    })
-                    .Reverse()
-                    .ToList();
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error parsing messages");
-                return new List<ChatMessageDto>();
-            }
         }
     }
 }

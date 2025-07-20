@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
+using TestingAppWeb.Interfaces;
+using TestingAppWeb.Services;
+using TestingAppWeb.Services.TestingAppWeb.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +20,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/User/Login";
         options.AccessDeniedPath = "/User/AccessDenied";
     });
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IHomeService, HomeService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 
 var app = builder.Build();

@@ -2,4 +2,38 @@
     ViewData["Title"] = "Admin Panel";
 }
 
-<a>ADMIN PANEL</a>
+<link rel="stylesheet" href="~/css/form.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/button.css" asp-append-version="true" />
+
+<div class="card-list-container">
+    <div class="text-center">
+        <h1 class="display-4">Here are people who wanted to add Fridmak to friends:</h1>
+    </div>
+
+    @if (Model is null)
+    {
+        <p class="no-items">No friends to be approved.</p>
+    }
+    else
+    {
+        foreach (var friend in Model)
+        {
+            <div class="card">
+            <h2 class="card__title">@friend.Name</h2>
+            <div class="card__content">
+            <p>Age: @friend.Age</p>
+            <p>Contact: @friend.Contact</p>
+        </div>
+        <form asp-controller="User" asp-action="AcceptFriend" method="post">
+            <input type="hidden" name="id" value="@friend.Id" />
+            <button type="submit">Approve</button>
+        </form>
+
+        <form asp-controller="User" asp-action="RejectFriend" method="post">
+            <input type="hidden" name="id" value="@friend.Id" />
+            <button type="submit">Disapprove</button>
+        </form>
+        </div>
+        }
+    }
+</div>
