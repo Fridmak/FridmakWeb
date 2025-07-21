@@ -26,12 +26,12 @@
         </div>
         <form asp-controller="User" asp-action="AcceptFriend" method="post">
             <input type="hidden" name="id" value="@friend.Id" />
-            <button type="submit">Approve</button>
+            <button type="submit" class="btn-custom btn-outline">Approve</button>
         </form>
 
         <form asp-controller="User" asp-action="RejectFriend" method="post">
             <input type="hidden" name="id" value="@friend.Id" />
-            <button type="submit">Disapprove</button>
+            <button type="submit" class="btn-custom btn-outline">Disapprove</button>
         </form>
         </div>
         }
