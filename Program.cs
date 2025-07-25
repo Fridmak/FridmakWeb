@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
+using TestingAppWeb.Middleware;
+using TestingAppWeb.MiddleWare;
 using TestingAppWeb.Services;
 using TestingAppWeb.Services.TestingAppWeb.Services;
 
@@ -34,6 +36,13 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.UseMiddleware<RateLimitMiddleware>(); // custom
+
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/Error"),
+    appBuilder => appBuilder.UseMiddleware<IpFilterMiddleWare>() // custom
+);
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

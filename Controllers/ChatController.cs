@@ -66,7 +66,7 @@ namespace TestingAppWeb.Controllers
         public async Task<IActionResult> GetMessages()
         {
             var messages = await _chatService.GetRecentMessagesAsync();
-            return Json(messages);
+            return Ok(messages);
         }
     }
 }
