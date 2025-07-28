@@ -32,6 +32,12 @@ builder.Services.AddSingleton<ChatHandlerManager>();
 builder.Services.AddSingleton<ChatServer>();
 builder.Services.AddHostedService<ChatBackgroundService>();
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
+
 
 var app = builder.Build();
 

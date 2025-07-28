@@ -39,5 +39,6 @@ public class ChatHandler
             if (_messagesToUpdateToClient.TryPop(out var update))
                 yield return update;
         }
+        yield break;
     }
 }

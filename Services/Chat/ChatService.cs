@@ -89,16 +89,18 @@ namespace TestingAppWeb.Services.Chat
             var handler = _chatHandlerManager.GetOrCreateHandler(userId);
             var updates = handler.GetMessagesToUpdate();
 
-            return updates.Select(m => (
+            var res= updates.Select(m => (
                 new ChatMessageDto
                 {
                     MessageId = m.Message.Id,
                     Text = m.Message.MessageText,
-                    UserName = m.Message.Sender?.Username ?? "Unknown",
+                    UserName = _context.Users.Find(m.Message.SenderId).Username,
                     Timestamp = m.Message.SentAt
                 },
                 m.Action
             )).ToList();
+
+            return res;
         }
 
         public async Task<bool> EditMessageAsync(EditMessageRequest request)

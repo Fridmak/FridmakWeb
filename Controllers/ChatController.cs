@@ -67,10 +67,11 @@ namespace TestingAppWeb.Controllers
         public async Task<IActionResult> GetMessages(bool loadOld = false)
         {
             var messages = await GetMessagesAndActions(loadOld);
-            return Ok(messages);
+            var formattedMessages = messages.Select(m => new object[] { m.Item1, m.Item2 }).ToList();
+            return Ok(formattedMessages);
         }
 
-        private async Task<IEnumerable<(ChatMessageDto, MessageAction)>> GetMessagesAndActions(bool loadOld)
+        private async Task<List<(ChatMessageDto, MessageAction)>> GetMessagesAndActions(bool loadOld)
         {
             return await _chatService.GetMessagesToUpdateAsync(loadOld);
         }

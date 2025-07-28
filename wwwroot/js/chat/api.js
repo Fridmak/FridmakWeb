@@ -9,7 +9,9 @@
 
 export async function getMessagesFromServer(url) {
     const res = await fetch(url);
-    return await res.json();
+    const data = await res.json();
+    console.log('ПОЛНЫЙ ОТВЕТ С СЕРВЕРА:', data);
+    return data;
 }
 
 export async function sendEditMessageToServer(messageId, newMessage, comment, isDelete) {

@@ -13,7 +13,7 @@ async function sendMessage(text) {
 }
 
 async function loadMessages(isFullReload = false) {
-    const url = `/api/chat?loadOld=${isFullReload}`;
+    const url = `/Chat/GetMessages?loadOld=${isFullReload}`;
     const messages = await getMessagesFromServer(url);
     updateMessageList(chatContainer, messages, isFullReload);
 }

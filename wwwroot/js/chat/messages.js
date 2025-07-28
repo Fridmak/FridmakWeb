@@ -2,32 +2,58 @@
     const messageList = chatContainer.querySelector('#chat-messages');
     const wasAtBottom = isAtBottom(chatContainer);
 
+    // Защита: убедимся, что messages — массив
+    if (!Array.isArray(messages)) {
+        console.warn('updateMessageList: messages не является массивом', messages);
+        return;
+    }
+
+    console.log('Получено сообщений:', messages.length, messages);
+
     if (isFullReload) {
         messageList.innerHTML = '';
-        messages.forEach(([msg, action]) => {
+        messages.forEach(item => {
+            const [msg, action] = item;
+
             if (action === 'Send') {
+                if (!msg || typeof msg !== 'object') {
+                    console.warn('Некорректное сообщение:', msg);
+                    return;
+                }
                 appendMessage(messageList, msg);
             }
         });
     } else {
-        messages.forEach(([msg, action]) => {
+        messages.forEach(item => {
+            if (!Array.isArray(item) || item.length < 2) {
+                console.warn('Некорректный элемент в обновлениях:', item);
+                return;
+            }
+
+            const [msg, action] = item;
+
             const existingMessage = messageList.querySelector(`[data-id="${msg.messageId}"]`)?.parentElement;
 
             switch (action) {
                 case 'Send':
                     appendMessage(messageList, msg);
                     break;
+
                 case 'Edit':
                     if (existingMessage) {
                         const p = existingMessage.querySelector('p');
                         if (p) p.textContent = msg.text;
                     }
                     break;
+
                 case 'Delete':
                     if (existingMessage) {
                         existingMessage.remove();
                     }
                     break;
+
+                default:
+                    console.warn('Неизвестное действие:', action);
             }
         });
     }
@@ -79,3 +105,19 @@ function appendMessage(messageList, msg) {
     li.appendChild(div);
     messageList.appendChild(li);
 }
+
+export function isAtBottom(element) {
+    const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight <= 10;
+    return atBottom;
+}
+
+export function scrollDown(chatContainer) {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+export function scrollDownSmooth(chatContainer) {
+    chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: 'smooth'
+    });
+}
+
