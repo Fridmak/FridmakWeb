@@ -18,7 +18,8 @@ namespace TestingAppWeb.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var messages = await _chatService.GetRecentMessagesAsync();
+            var messagesWithActions = await GetMessagesAndActions(true);
+            var messages = messagesWithActions.Select(msg => msg.Item1).ToList();
             return View(messages);
         }
 
@@ -63,10 +64,15 @@ namespace TestingAppWeb.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetMessages()
+        public async Task<IActionResult> GetMessages(bool loadOld = false)
         {
-            var messages = await _chatService.GetRecentMessagesAsync();
+            var messages = await GetMessagesAndActions(loadOld);
             return Ok(messages);
+        }
+
+        private async Task<IEnumerable<(ChatMessageDto, MessageAction)>> GetMessagesAndActions(bool loadOld)
+        {
+            return await _chatService.GetMessagesToUpdateAsync(loadOld);
         }
     }
 }

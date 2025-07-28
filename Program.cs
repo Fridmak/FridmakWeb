@@ -1,16 +1,17 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Middleware;
 using TestingAppWeb.MiddleWare;
 using TestingAppWeb.Services;
-using TestingAppWeb.Services.TestingAppWeb.Services;
+using TestingAppWeb.Services.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")
@@ -26,7 +27,10 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<ChatHandlerManager>();
+builder.Services.AddSingleton<ChatServer>();
+builder.Services.AddHostedService<ChatBackgroundService>();
 
 
 var app = builder.Build();

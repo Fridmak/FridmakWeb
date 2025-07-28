@@ -1,5 +1,5 @@
 ﻿import { setupChatForm } from './form.js';
-import { updateMessageList, scrollDown, scrollDownSmooth, isAtBottom } from './messages.js';
+import { updateMessageList, scrollDownSmooth, isAtBottom } from './messages.js';
 import { sendMessageToServer, getMessagesFromServer } from './api.js';
 import { addEditToContainer } from './edit_message.js';
 
@@ -8,30 +8,36 @@ const chatContainer = document.querySelector('.chat-container');
 const scrollButton = document.getElementById('scroll-down-btn');
 
 async function sendMessage(text) {
-    const newMessage = await sendMessageToServer(text);
-    scrollDown(chatContainer);
+    await sendMessageToServer(text);
+    scrollDownSmooth(chatContainer);
 }
 
-async function loadMessages() {
-    const messages = await getMessagesFromServer();
-    updateMessageList(chatContainer, messages);
+async function loadMessages(isFullReload = false) {
+    const url = `/api/chat?loadOld=${isFullReload}`;
+    const messages = await getMessagesFromServer(url);
+    updateMessageList(chatContainer, messages, isFullReload);
 }
 
 function toggleScrollButtonVisibility() {
     scrollButton.style.display = isAtBottom(chatContainer) ? 'none' : 'inline-block';
 }
 
-setupChatForm(form, chatContainer, sendMessage, scrollDownSmooth);
+async function initChat() {
+    loadMessages(false);
+    scrollDownSmooth(chatContainer);
 
-setInterval(loadMessages, 500);
+    setInterval(async () => {
+        await loadMessages(false);
+    }, 500);
+}
 
-await loadMessages();
-scrollDown(chatContainer);
-
-setInterval(toggleScrollButtonVisibility, 700);
+await initChat();
 
 scrollButton.addEventListener('click', () => {
     scrollDownSmooth(chatContainer);
 });
 
+setInterval(toggleScrollButtonVisibility, 700);
+
+setupChatForm(form, chatContainer, sendMessage, scrollDownSmooth);
 addEditToContainer(chatContainer);

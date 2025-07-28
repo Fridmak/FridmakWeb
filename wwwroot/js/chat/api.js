@@ -4,11 +4,11 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ Text: text })
     });
-
-    return response.json();
+    return await response.json();
 }
-export async function getMessagesFromServer() {
-    const res = await fetch('/Chat/GetMessages');
+
+export async function getMessagesFromServer(url) {
+    const res = await fetch(url);
     return await res.json();
 }
 
@@ -16,8 +16,7 @@ export async function sendEditMessageToServer(messageId, newMessage, comment, is
     const response = await fetch('/Chat/EditMessage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Id: messageId , Message: newMessage, Comment: comment, Delete: isDelete})
+        body: JSON.stringify({ Id: messageId, Message: newMessage, Comment: comment, Delete: isDelete })
     });
-
-    return response.json();
+    return await response.json();
 }
