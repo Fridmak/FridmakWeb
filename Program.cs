@@ -26,6 +26,8 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+builder.Services.AddSingleton<ChatHandlerManager>();
+
 
 var app = builder.Build();
 
