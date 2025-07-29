@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
+using TestingAppWeb.Models;
 using TestingAppWeb.Models.Chat;
 using TestingAppWeb.Services.Chat;
 
@@ -12,6 +13,7 @@ public class ChatServer
     private readonly ILogger<ChatServer> _logger;
     private readonly ChatHandlerManager _handlerManager;
     private readonly ChatBotsManager _chatBotsManager;
+    public readonly int BOTID = -1;
 
     public ChatServer(
         IServiceProvider serviceProvider,
@@ -33,6 +35,16 @@ public class ChatServer
 
         var allTasks = new List<(int UserId, ChatMSG Message, MessageAction Action)>();
 
+        ProcessAllPendingMessagesFromPeople(allTasks);
+        ProcessAllPendingMessagesFromBots(allTasks);
+
+        await ProcessTasksInDatabase(context, allTasks);
+
+        DistributeUpdatesToAllHandlers(allTasks);
+    }
+
+    private async Task ProcessAllPendingMessagesFromPeople(List<(int UserId, ChatMSG Message, MessageAction Action)> allTasks)
+    {
         foreach (var userId in _handlerManager.GetAllUserIds())
         {
             if (_handlerManager.TryGetHandler(userId, out var handler))
@@ -43,9 +55,20 @@ public class ChatServer
                 }
             }
         }
-        await ProcessTasksInDatabase(context, allTasks);
+    }
 
-        DistributeUpdatesToAllHandlers(allTasks);
+    private async Task ProcessAllPendingMessagesFromBots(List<(int UserId, ChatMSG Message, MessageAction Action)> allTasks)
+    {
+        foreach (var botName in _chatBotsManager.GetAllBots())
+        {
+            if (_chatBotsManager.TryGetChatBot(botName, out var handler))
+            {
+                while (handler.TryDequeueOutgoingTask(out var task))
+                {
+                    allTasks.Add((BOTID, task.Message, task.Action));
+                }
+            }
+        }
     }
 
     private async Task ProcessTasksInDatabase(AppDbContext context, List<(int, ChatMSG, MessageAction)> tasks)

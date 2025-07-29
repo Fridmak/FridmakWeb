@@ -11,10 +11,13 @@ namespace TestingAppWeb.Controllers
     public class ChatController : Controller
     {
         private readonly IChatService _chatService;
+        private readonly string _botToken;
 
-        public ChatController(IChatService chatService)
+        public ChatController(IChatService chatService, IConfiguration configuration)
         {
             _chatService = chatService;
+            _botToken = configuration["BotSettings:Token"]
+               ?? throw new InvalidOperationException("Bot token is not configured.");
         }
 
         public async Task<IActionResult> Index()
@@ -83,7 +86,8 @@ namespace TestingAppWeb.Controllers
         public async Task<IActionResult> SendBotMessage([FromBody] BotMessageRequest request)
         {
             var token = Request.Headers["X-Bot-Token"];
-            if (token != "your-super-secret-bot-token-here")
+
+            if (token != _botToken)
             {
                 return Unauthorized(new { success = false, error = "Invalid bot token" });
             }

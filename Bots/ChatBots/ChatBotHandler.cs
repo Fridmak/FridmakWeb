@@ -1,26 +1,30 @@
 ﻿using System.Collections.Concurrent;
 using TestingAppWeb.Interfaces;
+using TestingAppWeb.Models;
 using TestingAppWeb.Models.Chat;
 
 namespace TestingAppWeb.Bots.ChatBots;
 
-public class ChatBot
+public class ChatBotHandler
 {
     private readonly ConcurrentDictionary<Guid, TaskItem> _newTasks = new();
     private readonly ConcurrentDictionary<Guid, byte> _failedTasks = new();
+    private readonly ConcurrentStack<(ChatMSG Message, MessageAction Action)> _messagesToUpdateToServer;
     private readonly IChatBot _chatBotService;
-    private readonly ILogger<ChatBot> _logger;
+    private readonly ILogger<ChatBotHandler> _logger;
     public readonly string Name;
+    public readonly User Entity;
 
     private IChatChannel? _chatChannel;
     private string _botName = string.Empty;
 
-    public ChatBot(string name, IChatBot chatBotService, ILogger<ChatBot> logger)
+    public ChatBotHandler(string name, IChatBot chatBotService, ILogger<ChatBotHandler> logger)
     {
         _chatBotService = chatBotService;
         _logger = logger;
 
         Name = name;
+        Entity = GenerateBotEntity();
     }
 
     public async Task CreateChatChannel(IChatChannel chatChannel)
@@ -58,10 +62,11 @@ public class ChatBot
                 if (!IsValidHandle(handled))
                     continue;
 
-                var done = await HandleChatBotDecision(handled);
-                if (done)
+                var verdict = await HandleChatBotDecision(handled);
+                if (verdict != null)
                 {
                     _newTasks.TryRemove(key, out _);
+                    _messagesToUpdateToServer.Push( ((ChatMSG Message, MessageAction Action)) verdict );
                 }
             }
             catch (Exception ex)
@@ -87,13 +92,13 @@ public class ChatBot
         return true;
     }
 
-    private async Task<bool> HandleChatBotDecision(ChatBotHandle handle)
+    private async Task<(ChatMSG Message, MessageAction Action)?> HandleChatBotDecision(ChatBotHandle handle)
     {
         if (_chatChannel is null)
-            return false;
+            return null;
 
         // Обработка решения бота
-        return true;
+        return (new ChatMSG(), MessageAction.Send); // ToDO
     }
 
     private void MarkAsFailed(Guid key)
@@ -106,5 +111,16 @@ public class ChatBot
     private sealed record TaskItem(ChatMSG Message, MessageAction Action)
     {
         public int AttemptCount { get; set; }
+    }
+
+    private User GenerateBotEntity()
+    {
+        var bot = new User { Username = Name, Email = "BOT@mail.com", Id = -1, Role = "Bot", PasswordHash = "PASSWORDHASH" };
+        return bot;
+    }
+
+    public bool TryDequeueOutgoingTask(out (ChatMSG Message, MessageAction Action) task)
+    {
+        return _messagesToUpdateToServer.TryPop(out task);
     }
 }
