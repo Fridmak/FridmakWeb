@@ -20,7 +20,6 @@ export function addEditToContainer(chatContainer) {
 
                 if (result.success) {
                     console.log("Edited");
-                    messageParagraph.textContent = newText;
                 } else {
                     alert('Error: ' + (result.error || 'Couldnt edit message'));
                 }
@@ -89,11 +88,8 @@ function showEditModal(currentText) {
         });
 
         deleteBtn.addEventListener('click', () => {
-            const confirmDelete = confirm('Are you sure you want to delete this message?');
-            if (confirmDelete) {
-                document.body.removeChild(overlay);
-                resolve({ newText: null, comment: null, isDelete: true });
-            }
+            document.body.removeChild(overlay);
+            resolve({ newText: null, comment: null, isDelete: true });
         });
 
         cancelBtn.addEventListener('click', () => {

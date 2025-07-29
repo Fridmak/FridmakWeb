@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using TestingAppWeb.Models;
+using TestingAppWeb.Models.Chat;
 
 public class ChatHandler
 {

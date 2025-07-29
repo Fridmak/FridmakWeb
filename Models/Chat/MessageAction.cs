@@ -1,4 +1,4 @@
-﻿namespace TestingAppWeb.Models
+﻿namespace TestingAppWeb.Models.Chat
 {
     public enum MessageAction
     {

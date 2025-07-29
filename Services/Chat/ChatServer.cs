@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Concurrent;
+using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
-using TestingAppWeb.Models;
+using TestingAppWeb.Interfaces;
+using TestingAppWeb.Models.Chat;
 using TestingAppWeb.Services.Chat;
 
 public class ChatServer
@@ -8,15 +11,18 @@ public class ChatServer
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ChatServer> _logger;
     private readonly ChatHandlerManager _handlerManager;
+    private readonly ChatBotsManager _chatBotsManager;
 
     public ChatServer(
         IServiceProvider serviceProvider,
         ILogger<ChatServer> logger,
-        ChatHandlerManager handlerManager)
+        ChatHandlerManager handlerManager,
+        ChatBotsManager botsManager)
     {
         _serviceProvider = serviceProvider; 
         _logger = logger;                   
         _handlerManager = handlerManager;
+        _chatBotsManager = botsManager;
     }
 
     public async Task ProcessAllPendingMessages()
@@ -85,6 +91,27 @@ public class ChatServer
                 _handlerManager.GetOrCreateHandler(userId)
                     .EnqueueIncomingUpdate((message, action));
             }
+
+            SendNewMessageToChatBots((message, action));
         }
+    }
+
+    private async void SendNewMessageToChatBots((ChatMSG, MessageAction) task)
+    {
+        var chatBotNames = _chatBotsManager.GetAllBots().ToArray();
+
+        foreach (var name in chatBotNames)
+        {
+            if (_chatBotsManager.TryGetChatBot(name, out var bot))
+            {
+                await bot.AcceptNewMessage(task)
+                         .ConfigureAwait(false);
+            }
+        }
+    }
+
+    public async Task RegisterChatBot(string chatBotName, IChatBot chatBot)
+    {
+        _chatBotsManager.GetOrCreateBot(chatBotName, chatBot);
     }
 }

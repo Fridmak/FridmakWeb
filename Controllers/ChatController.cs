@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
+using TestingAppWeb.Models.Chat;
 using TestingAppWeb.Services;
 
 namespace TestingAppWeb.Controllers
@@ -74,6 +75,34 @@ namespace TestingAppWeb.Controllers
         private async Task<List<(ChatMessageDto, MessageAction)>> GetMessagesAndActions(bool loadOld)
         {
             return await _chatService.GetMessagesToUpdateAsync(loadOld);
+        }
+
+        [HttpPost]
+        [Route("api/chat/bot-message")]
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public async Task<IActionResult> SendBotMessage([FromBody] BotMessageRequest request)
+        {
+            var token = Request.Headers["X-Bot-Token"];
+            if (token != "your-super-secret-bot-token-here")
+            {
+                return Unauthorized(new { success = false, error = "Invalid bot token" });
+            }
+
+            if (request == null || string.IsNullOrWhiteSpace(request.Text) || string.IsNullOrWhiteSpace(request.BotName))
+            {
+                return BadRequest(new { success = false, error = "Invalid request data" });
+            }
+
+            try
+            {
+                await _chatService.SendBotMessageASync(request);
+
+                return Ok(new { success = true, message = "Bot message sent" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, error = "Internal error" });
+            }
         }
     }
 }

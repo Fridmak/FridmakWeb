@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using TestingAppWeb.Models;
+using TestingAppWeb.Models.Chat;
 
 namespace TestingAppWeb.Data
 {

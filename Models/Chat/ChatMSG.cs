@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TestingAppWeb.Models
+namespace TestingAppWeb.Models.Chat
 {
     public class ChatMSG
     {

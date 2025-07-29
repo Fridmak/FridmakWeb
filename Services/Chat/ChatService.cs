@@ -3,6 +3,7 @@ using System.Security.Claims;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
+using TestingAppWeb.Models.Chat;
 
 namespace TestingAppWeb.Services.Chat
 {
