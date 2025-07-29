@@ -51,6 +51,6 @@ else
 }
 
 <script type="text/javascript">
-    const isAdmin = @((User.IsInRole("Admin")) ? "true" : "false");
+    window.isAdmin = @((User.IsInRole("Admin")) ? "true" : "false");
 </script>
 <script type="module" src="~/js/chat/main.js" asp-append-version="true"></script>

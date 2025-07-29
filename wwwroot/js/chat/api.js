@@ -10,7 +10,7 @@
 export async function getMessagesFromServer(url) {
     const res = await fetch(url);
     const data = await res.json();
-    console.log('ПОЛНЫЙ ОТВЕТ С СЕРВЕРА:', data);
+    
     return data;
 }
 

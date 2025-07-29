@@ -2,14 +2,6 @@
     const messageList = chatContainer.querySelector('#chat-messages');
     const wasAtBottom = isAtBottom(chatContainer);
 
-    // Защита: убедимся, что messages — массив
-    if (!Array.isArray(messages)) {
-        console.warn('updateMessageList: messages не является массивом', messages);
-        return;
-    }
-
-    console.log('Получено сообщений:', messages.length, messages);
-
     if (isFullReload) {
         messageList.innerHTML = '';
         messages.forEach(item => {
@@ -25,11 +17,6 @@
         });
     } else {
         messages.forEach(item => {
-            if (!Array.isArray(item) || item.length < 2) {
-                console.warn('Некорректный элемент в обновлениях:', item);
-                return;
-            }
-
             const [msg, action] = item;
 
             const existingMessage = messageList.querySelector(`[data-id="${msg.messageId}"]`)?.parentElement;
@@ -94,18 +81,12 @@ function appendMessage(messageList, msg) {
         btn.title = 'Действия';
         btn.textContent = '⋯';
 
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            console.log('Клик по кнопке действий', msg);
-        });
-
         div.appendChild(btn);
     }
 
     li.appendChild(div);
     messageList.appendChild(li);
 }
-
 export function isAtBottom(element) {
     const atBottom = element.scrollHeight - element.scrollTop - element.clientHeight <= 10;
     return atBottom;
