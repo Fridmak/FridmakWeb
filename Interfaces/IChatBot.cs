@@ -5,8 +5,9 @@ namespace TestingAppWeb.Interfaces
 {
     public interface IChatBot
     {
-        public Task<ChatBotHandle> HandleNewSingleMessage(ChatMSG message);
-        public Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMSG message);
-        public Task<ChatBotHandle> HandleEditSingleMessage(ChatMSG message);
+        string NAME { get; }
+        public Task<ChatBotHandle> HandleNewSingleMessage(ChatMessageDto message);
+        public Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message);
+        public Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message);
     }
 }

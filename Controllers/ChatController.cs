@@ -79,34 +79,5 @@ namespace TestingAppWeb.Controllers
         {
             return await _chatService.GetMessagesToUpdateAsync(loadOld);
         }
-
-        [HttpPost]
-        [Route("api/chat/bot-message")]
-        [ApiExplorerSettings(IgnoreApi = true)]
-        public async Task<IActionResult> SendBotMessage([FromBody] BotMessageRequest request)
-        {
-            var token = Request.Headers["X-Bot-Token"];
-
-            if (token != _botToken)
-            {
-                return Unauthorized(new { success = false, error = "Invalid bot token" });
-            }
-
-            if (request == null || string.IsNullOrWhiteSpace(request.Text) || string.IsNullOrWhiteSpace(request.BotName))
-            {
-                return BadRequest(new { success = false, error = "Invalid request data" });
-            }
-
-            try
-            {
-                await _chatService.SendBotMessageASync(request);
-
-                return Ok(new { success = true, message = "Bot message sent" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, error = "Internal error" });
-            }
-        }
     }
 }

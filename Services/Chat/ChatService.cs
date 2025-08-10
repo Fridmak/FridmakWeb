@@ -54,7 +54,7 @@ namespace TestingAppWeb.Services.Chat
                                 m.SentAt != default &&
                                 m.Sender != null &&
                                 !string.IsNullOrEmpty(m.Sender.Username))
-                    .OrderByDescending(m => m.SentAt)
+                    .OrderBy(m => m.SentAt)
                     .Take(_messagesToShow)
                     .Select(m => new ChatMessageDto
                     {
@@ -66,7 +66,6 @@ namespace TestingAppWeb.Services.Chat
                     .ToListAsync();
 
                 var result = messages
-                    .OrderBy(m => m.Timestamp)
                     .Select(m => (m, MessageAction.Send))
                     .ToList();
 
@@ -90,7 +89,7 @@ namespace TestingAppWeb.Services.Chat
             var handler = _chatHandlerManager.GetOrCreateHandler(userId);
             var updates = handler.GetMessagesToUpdate();
 
-            var res= updates.Select(m => (
+            var res = updates.Select(m => (
                 new ChatMessageDto
                 {
                     MessageId = m.Message.Id,
@@ -99,7 +98,9 @@ namespace TestingAppWeb.Services.Chat
                     Timestamp = m.Message.SentAt
                 },
                 m.Action
-            )).ToList();
+            ))
+            .OrderBy(m => m.Item1.Timestamp)
+            .ToList();
 
             return res;
         }

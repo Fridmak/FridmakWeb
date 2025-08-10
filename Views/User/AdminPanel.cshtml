@@ -1,4 +1,5 @@
-﻿@{
+﻿@using TestingAppWeb.Bots.ChatBots
+@{
     ViewData["Title"] = "Admin Panel";
 }
 
@@ -6,34 +7,89 @@
 <link rel="stylesheet" href="~/css/button.css" asp-append-version="true" />
 
 <div class="card-list-container">
+
     <div class="text-center">
         <h1 class="display-4">Here are people who wanted to add Fridmak to friends:</h1>
     </div>
 
-    @if (Model is null)
+    @if (ViewBag.FriendsToApprove == null || !ViewBag.FriendsToApprove.Any())
     {
         <p class="no-items">No friends to be approved.</p>
     }
     else
     {
-        foreach (var friend in Model)
+        foreach (var friend in ViewBag.FriendsToApprove)
         {
             <div class="card">
-            <h2 class="card__title">@friend.Name</h2>
-            <div class="card__content">
-            <p>Age: @friend.Age</p>
-            <p>Contact: @friend.Contact</p>
-        </div>
-        <form asp-controller="User" asp-action="AcceptFriend" method="post">
-            <input type="hidden" name="id" value="@friend.Id" />
-            <button type="submit" class="btn-custom btn-outline">Approve</button>
-        </form>
-
-        <form asp-controller="User" asp-action="RejectFriend" method="post">
-            <input type="hidden" name="id" value="@friend.Id" />
-            <button type="submit" class="btn-custom btn-outline">Disapprove</button>
-        </form>
-        </div>
+                <h2 class="card__title">@friend.Name</h2>
+                <div class="card__content">
+                    <p>Age: @friend.Age</p>
+                    <p>Contact: @friend.Contact</p>
+                </div>
+                <form asp-controller="User" asp-action="AcceptFriend" method="post">
+                    <input type="hidden" name="id" value="@friend.Id" />
+                    <button type="submit" class="btn-custom btn-outline">Approve</button>
+                </form>
+                <form asp-controller="User" asp-action="RejectFriend" method="post">
+                    <input type="hidden" name="id" value="@friend.Id" />
+                    <button type="submit" class="btn-custom btn-outline">Disapprove</button>
+                </form>
+            </div>
         }
     }
+
+    <!-- === Bots Section === -->
+    <div class="text-center" style="margin-top: 50px;">
+        <h1 class="display-4">Bot Management</h1>
+    </div>
+
+    @{
+        var botsManager = ViewBag.BotsManager as ChatBotsManager;
+        var botNames = botsManager?.GetAllBots() ?? new List<string>();
+    }
+
+    @if (!botNames.Any())
+    {
+        <p class="no-items">No bots registered.</p>
+    }
+    else
+    {
+        foreach (var botName in botNames)
+        {
+            var isOn = botsManager.IsBotOn(botName);
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h2 class="card__title">🤖 @botName</h2>
+
+                    <div class="mb-2">
+                        <strong>Status:</strong>
+                        <span class="badge bg-@(isOn ? "success" : "danger")">
+                            @(isOn ? "🟢 On" : "🔴 Off")
+                        </span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <form asp-controller="User" asp-action="TurnBotOff" method="post">
+                            <input type="hidden" name="botName" value="@botName" />
+                            <button type="submit"
+                                    class="btn btn-outline-secondary @(isOn ? "" : "disabled")"
+                                    title="Bot is already off">
+                                Off
+                            </button>
+                        </form>
+
+                        <form asp-controller="User" asp-action="TurnBotOn" method="post">
+                            <input type="hidden" name="botName" value="@botName" />
+                            <button type="submit"
+                                    class="btn btn-outline-primary @(isOn ? "disabled" : "")"
+                                    title="Bot is already on">
+                                On
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+
 </div>

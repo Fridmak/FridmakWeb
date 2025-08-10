@@ -13,6 +13,7 @@
         {
             using var scope = _serviceProvider.CreateScope();
             var chatServer = scope.ServiceProvider.GetRequiredService<ChatServer>();
+            await chatServer.SetupBots();
 
             try
             {

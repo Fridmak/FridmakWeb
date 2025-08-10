@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
@@ -24,8 +25,12 @@ namespace TestingAppWeb.Controllers
         public async Task<IActionResult> AdminPanel()
         {
             var friendsToApprove = await _userService.GetFriendsToApproveAsync();
+            var botsManager = await _userService.GetBotsManager();
 
-            return View(friendsToApprove);
+            ViewBag.FriendsToApprove = friendsToApprove;
+            ViewBag.BotsManager = botsManager;
+
+            return View();
         }
 
         [Authorize(Roles = "Admin")]
@@ -130,6 +135,33 @@ namespace TestingAppWeb.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> TurnBotOn(string botName)
+        {
+            var botsManager = HttpContext.RequestServices.GetRequiredService<ChatBotsManager>();
+            botsManager.TurnBotOn(botName);
+            return RedirectToAction("AdminPanel");
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> TurnBotOff(string botName)
+        {
+            var botsManager = HttpContext.RequestServices.GetRequiredService<ChatBotsManager>();
+            botsManager.TurnBotOff(botName);
+            return RedirectToAction("AdminPanel");
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<bool> IsBotOn(string botName)
+        {
+            var botsManager = HttpContext.RequestServices.GetRequiredService<ChatBotsManager>();
+
+            return botsManager.IsBotOn(botName);
         }
     }
 }

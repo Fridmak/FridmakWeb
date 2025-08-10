@@ -1,15 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Middleware;
 using TestingAppWeb.MiddleWare;
 using TestingAppWeb.Services;
 using TestingAppWeb.Services.Chat;
+using TestingAppWeb.Services.Chat.Bots;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -23,14 +24,25 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LoginPath = "/User/Login";
         options.AccessDeniedPath = "/User/AccessDenied";
     });
+
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<ChatBotHandler>();
 builder.Services.AddSingleton<ChatHandlerManager>();
+builder.Services.AddSingleton<ChatBotsManager>();
 builder.Services.AddSingleton<ChatServer>();
 builder.Services.AddHostedService<ChatBackgroundService>();
+
+
+var botTypes = AppClassesFindService.FindChatBotTypes();
+foreach (var botType in botTypes)
+{
+    builder.Services.AddSingleton(botType);
+    builder.Services.AddSingleton(typeof(IChatBot), sp => sp.GetRequiredService(botType));
+}
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

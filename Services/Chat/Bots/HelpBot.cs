@@ -5,19 +5,32 @@ namespace TestingAppWeb.Services.Chat.Bots
 {
     public class HelpBot : IChatBot
     {
-        public Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMSG message)
+        public string NAME { get; } = "HelpBot";
+        private readonly ChatBotHandle _nullHandle = new ChatBotHandle(
+                messageText: "NoneHandle",
+                botName: "HelpBot",
+                Action: MessageAction.None);
+
+        public async Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message)
         {
-            throw new NotImplementedException();
+            return _nullHandle;
         }
 
-        public Task<ChatBotHandle> HandleEditSingleMessage(ChatMSG message)
+        public async Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message)
         {
-            throw new NotImplementedException();
+            return _nullHandle;
         }
 
-        public Task<ChatBotHandle> HandleNewSingleMessage(ChatMSG message)
+        public async Task<ChatBotHandle> HandleNewSingleMessage(ChatMessageDto message)
         {
-            throw new NotImplementedException();
+            var handle = new ChatBotHandle(
+                messageText: $"{message.Text}: Viewed",
+                botName: NAME,
+                Action: MessageAction.Edit,
+                toMessage: message);
+
+
+            return handle;
         }
     }
 }

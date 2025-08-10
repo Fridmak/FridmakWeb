@@ -1,4 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using Azure.Core;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
+using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.Chat;
@@ -9,41 +12,65 @@ public class ChatBotHandler
 {
     private readonly ConcurrentDictionary<Guid, TaskItem> _newTasks = new();
     private readonly ConcurrentDictionary<Guid, byte> _failedTasks = new();
-    private readonly ConcurrentStack<(ChatMSG Message, MessageAction Action)> _messagesToUpdateToServer;
-    private readonly IChatBot _chatBotService;
+    private readonly ConcurrentQueue<(ChatMSG Message, MessageAction Action)> _messagesToUpdateToServer = new();
+    public bool IsWorking { get; private set; }
+
+    private IChatBot _chatBotService = null!;
+    private User _botEntity = null!;
+    public string Name = null!;
+
+    private static readonly ChatBotHandle _nullHandle = new(
+        Action: MessageAction.None,
+        messageText: null,
+        botName: null
+    );
+
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ChatBotHandler> _logger;
-    public readonly string Name;
-    public readonly User Entity;
 
-    private IChatChannel? _chatChannel;
-    private string _botName = string.Empty;
-
-    public ChatBotHandler(string name, IChatBot chatBotService, ILogger<ChatBotHandler> logger)
+    public ChatBotHandler(ILogger<ChatBotHandler> logger, IServiceScopeFactory scopeFactory)
     {
-        _chatBotService = chatBotService;
         _logger = logger;
-
-        Name = name;
-        Entity = GenerateBotEntity();
+        _scopeFactory = scopeFactory;
     }
 
-    public async Task CreateChatChannel(IChatChannel chatChannel)
+    public void Initialize(string name, IChatBot chatBotService, User botEntity)
     {
-        _chatChannel = chatChannel;
+        if (!string.IsNullOrEmpty(Name))
+            throw new InvalidOperationException($"ChatBotHandler for '{Name}' is already initialized.");
+
+        Name = name;
+        _chatBotService = chatBotService ?? throw new ArgumentNullException(nameof(chatBotService));
+        _botEntity = botEntity ?? throw new ArgumentNullException(nameof(botEntity));
+        IsWorking = true;
     }
 
     public async Task AcceptNewMessage((ChatMSG, MessageAction) task)
     {
+        if (!IsWorking)
+            return;
+
         var (message, action) = task;
-        var item = new TaskItem(message, action);
-        _newTasks.TryAdd(Guid.NewGuid(), item);
+        var item = new TaskItem { Message = message, Action = action, AttemptCount = 0 };
+        var key = Guid.NewGuid();
+
+        if (!_newTasks.TryAdd(key, item))
+        {
+            _logger.LogWarning("Failed to add task for message {MessageId} in bot {BotName}", message.Id, Name);
+            return;
+        }
+
+        await ResolveNewTasks();
     }
 
     public async Task ResolveNewTasks()
     {
-        var keys = _newTasks.Keys.ToArray();
+        if (!IsWorking)
+            return;
 
-        foreach (var key in keys)
+        var taskKeys = _newTasks.Keys.ToArray();
+
+        foreach (var key in taskKeys)
         {
             if (_failedTasks.ContainsKey(key) || !_newTasks.TryGetValue(key, out var task))
                 continue;
@@ -58,69 +85,173 @@ public class ChatBotHandler
                     continue;
                 }
 
-                var handled = await HandleAction(task);
-                if (!IsValidHandle(handled))
+                var handle = await HandleAction(task);
+                if (!IsValidHandle(handle))
                     continue;
 
-                var verdict = await HandleChatBotDecision(handled);
-                if (verdict != null)
+                var result = await HandleChatBotDecision(handle);
+                if (result != null)
                 {
                     _newTasks.TryRemove(key, out _);
-                    _messagesToUpdateToServer.Push( ((ChatMSG Message, MessageAction Action)) verdict );
+                    _messagesToUpdateToServer.Enqueue(result.Value);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error handling task {TaskId} from {BotName}", key, _botName);
+                _logger.LogError(ex, "Error handling task {TaskId} from {BotName}", key, Name);
             }
         }
     }
 
     private async Task<ChatBotHandle> HandleAction(TaskItem task)
     {
+        var user = await FindUserAsync(task.Message.SenderId);
+        if (user.Role == "Bot")
+            return _nullHandle;
+
         return task.Action switch
         {
-            MessageAction.Send => await _chatBotService.HandleNewSingleMessage(task.Message),
-            MessageAction.Delete => await _chatBotService.HandleDeleteSingleMessage(task.Message),
-            MessageAction.Edit => await _chatBotService.HandleEditSingleMessage(task.Message),
-            _ => new ChatBotHandle()
+            MessageAction.Send => await _chatBotService.HandleNewSingleMessage(await ConvertMessageToDto(task.Message)),
+            MessageAction.Delete => await _chatBotService.HandleDeleteSingleMessage(await ConvertMessageToDto(task.Message)),
+            MessageAction.Edit => await _chatBotService.HandleEditSingleMessage(await ConvertMessageToDto(task.Message)),
+            _ => _nullHandle
         };
     }
 
-    private bool IsValidHandle(ChatBotHandle handle) 
+    private bool IsValidHandle(ChatBotHandle handle)
     {
+        if (handle.Action == MessageAction.None)
+            return false;
+
+        if (handle.messageText == null && handle.Action == MessageAction.Send)
+            return false;
+
+        if (handle.botName == null)
+            return false;
+
         return true;
     }
 
     private async Task<(ChatMSG Message, MessageAction Action)?> HandleChatBotDecision(ChatBotHandle handle)
     {
-        if (_chatChannel is null)
-            return null;
+        switch (handle.Action)
+        {
+            case MessageAction.Send:
+                return await HandleChatBotSendDecision(handle);
+;
+            case MessageAction.Delete:
+                return await HandleChatBotDeleteDecision(handle);
 
-        // Обработка решения бота
-        return (new ChatMSG(), MessageAction.Send); // ToDO
+            case MessageAction.Edit:
+                return await HandleChatBotEditDecision(handle);
+            default:
+                return (new ChatMSG(), MessageAction.None);
+
+        }
+    }
+
+    private async Task<(ChatMSG Message, MessageAction Action)?> HandleChatBotDeleteDecision(ChatBotHandle handle)
+    {
+        var originalMessage = await FindMessageAsync(handle.toMessage.MessageId);
+        var message = new ChatMSG
+        {
+            SenderId = originalMessage.SenderId,
+            SentAt = originalMessage.SentAt,
+            Id = originalMessage.Id,
+        };
+
+        return (message, MessageAction.Delete);
+    }
+
+    private async Task<(ChatMSG Message, MessageAction Action)?> HandleChatBotSendDecision(ChatBotHandle handle)
+    {
+        var message = new ChatMSG
+        {
+            MessageText = handle.messageText,
+            SenderId = _botEntity.Id,
+            SentAt = DateTime.Now
+        };
+
+        return (message, MessageAction.Send);
+    }
+
+    private async Task<(ChatMSG Message, MessageAction Action)?> HandleChatBotEditDecision(ChatBotHandle handle)
+    {
+        var originalMessage = await FindMessageAsync(handle.toMessage.MessageId);
+        var message = new ChatMSG
+        {
+            MessageText = handle.messageText,
+            SenderId = originalMessage.SenderId,
+            SentAt = originalMessage.SentAt,
+            Id = handle.toMessage.MessageId
+        };
+
+        return (message, MessageAction.Edit);
     }
 
     private void MarkAsFailed(Guid key)
     {
-        _failedTasks.TryAdd(key, 0);
-        _newTasks.TryRemove(key, out _);
+        if (_newTasks.TryRemove(key, out _))
+            _failedTasks.TryAdd(key, 0);
         _logger.LogWarning("Task {TaskId} marked as failed after 3 attempts", key);
-    }
-
-    private sealed record TaskItem(ChatMSG Message, MessageAction Action)
-    {
-        public int AttemptCount { get; set; }
-    }
-
-    private User GenerateBotEntity()
-    {
-        var bot = new User { Username = Name, Email = "BOT@mail.com", Id = -1, Role = "Bot", PasswordHash = "PASSWORDHASH" };
-        return bot;
     }
 
     public bool TryDequeueOutgoingTask(out (ChatMSG Message, MessageAction Action) task)
     {
-        return _messagesToUpdateToServer.TryPop(out task);
+        return _messagesToUpdateToServer.TryDequeue(out task);
+    }
+
+    private async Task<ChatMessageDto> ConvertMessageToDto(ChatMSG message)
+    {
+        var user = await FindUserAsync(message.SenderId);
+
+        return new ChatMessageDto
+        {
+            Text = message.MessageText,
+            UserName = user.Username,
+            Timestamp = message.SentAt,
+            MessageId = message.Id
+        };
+    }
+
+    private async Task<User> FindUserAsync(int userId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var user = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        return user;
+    }
+
+    private async Task<ChatMSG>? FindMessageAsync(int messageId)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var msg = await context.ChatMessages
+                .Include(m => m.Sender)
+                .FirstOrDefaultAsync(m => m.Id == messageId);
+
+        return msg;
+    }
+
+    public void TurnBotOn()
+    {
+        IsWorking = true;
+    }
+
+    public void TurnBotOff()
+    {
+        IsWorking = false;
+    }
+
+    private class TaskItem
+    {
+        public ChatMSG Message { get; set; } = null!;
+        public MessageAction Action { get; set; }
+        public int AttemptCount { get; set; }
     }
 }

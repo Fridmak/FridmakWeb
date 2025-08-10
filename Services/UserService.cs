@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
@@ -10,12 +11,14 @@ namespace TestingAppWeb.Services
     public class UserService : IUserService
     {
         private readonly AppDbContext _context;
+        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(AppDbContext context, ILogger<UserService> logger)
+        public UserService(AppDbContext context, ILogger<UserService> logger, IServiceProvider serviceProvider)
         {
             _context = context;
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<User> GetUserByUsernameAsync(string username)
@@ -45,6 +48,16 @@ namespace TestingAppWeb.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<bool> RegisterUserAsync(string userName, string email, string password)
+        {
+            var model = new RegisterViewModel{
+                Username = userName,
+                Email = email,
+                Password = password
+            };
+            return await RegisterUserAsync(model);
         }
 
         public string GetPasswordHash(string password)
@@ -88,6 +101,11 @@ namespace TestingAppWeb.Services
             var res = await _context.Friends.Where(x => !x.Approved).ToListAsync();
 
             return res.Count != 0? res : null;
+        }
+
+        public async Task<ChatBotsManager> GetBotsManager()
+        {
+            return _serviceProvider.GetRequiredService<ChatBotsManager>();
         }
     }
 }

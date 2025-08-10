@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
-using TestingAppWeb.Models;
+using TestingAppWeb.Bots.ChatBots;
+using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models.Chat;
 
 public class ChatHandler
@@ -8,11 +9,19 @@ public class ChatHandler
     private readonly ConcurrentStack<(ChatMSG Message, MessageAction Action)> _messagesToUpdateToClient = new();
     private readonly int _id;
     private readonly ILogger<ChatHandler> _logger;
+    private readonly IServiceProvider _serviceProvider;
 
-    public ChatHandler(int id, ILogger<ChatHandler> logger)
+    public ChatHandler(int id, IServiceProvider serviceProvider)
     {
         _id = id;
-        _logger = logger;
+        _serviceProvider = serviceProvider;
+
+        _logger = CreateLogger();
+    }
+
+    private ILogger<ChatHandler> CreateLogger()
+    {
+        return _serviceProvider.GetRequiredService<ILogger<ChatHandler>>();
     }
 
     public void AddMessage((ChatMSG Message, MessageAction Action) message)

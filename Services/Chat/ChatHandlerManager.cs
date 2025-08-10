@@ -6,18 +6,18 @@ namespace TestingAppWeb.Services.Chat
     public class ChatHandlerManager
     {
         private readonly ConcurrentDictionary<int, ChatHandler> _handlers = new();
-        private readonly ILogger<ChatHandler> _logger;
-        private readonly ILogger<ChatHandlerManager> _selfLogger;
+        private readonly ILogger<ChatHandlerManager> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
-        public ChatHandlerManager(ILogger<ChatHandler> logger, ILogger<ChatHandlerManager> selfLogger)
+        public ChatHandlerManager(IServiceProvider serviceProvider, ILogger<ChatHandlerManager> logger)
         {
             _logger = logger;
-            _selfLogger = selfLogger;
+            _serviceProvider = serviceProvider;
         }
 
         public ChatHandler GetOrCreateHandler(int userId)
         {
-            return _handlers.GetOrAdd(userId, id => new ChatHandler(id, _logger));
+            return _handlers.GetOrAdd(userId, id => new ChatHandler(id, _serviceProvider));
         }
 
         public bool TryGetHandler(int userId, out ChatHandler handler)

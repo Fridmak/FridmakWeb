@@ -4,7 +4,7 @@ namespace TestingAppWeb.Interfaces
 {
     public interface IChatChannel
     {
-        public Task SendMessageToChat(ChatMessageDto message);
-        public Task DeleteMessageFromChat(int messageId);
+        public Task<bool> SendMessageToChat(ChatMessageDto message);
+        public Task<bool> DeleteMessageFromChat(int messageId);
     }
 }

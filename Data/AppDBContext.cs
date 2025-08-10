@@ -21,9 +21,9 @@ namespace TestingAppWeb.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<ChatMSG>()
-            .HasOne(m => m.Sender)
-            .WithMany()
-            .HasForeignKey(m => m.SenderId);
+                .HasOne(m => m.Sender)
+                .WithMany()
+                .HasForeignKey(m => m.SenderId);
         }
     }
 }

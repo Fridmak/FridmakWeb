@@ -1,6 +1,9 @@
-﻿namespace TestingAppWeb.Models
+﻿namespace TestingAppWeb.Models.Chat
 {
-    public class ChatBotHandle
-    {
-    }
+    public record ChatBotHandle(
+        MessageAction Action,
+        string? messageText,
+        string? botName,
+        ChatMessageDto? toMessage = null
+    );
 }

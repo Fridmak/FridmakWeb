@@ -4,6 +4,7 @@
     {
         Send,
         Delete,
-        Edit
+        Edit,
+        None
     }
 }

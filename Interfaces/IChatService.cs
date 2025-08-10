@@ -8,6 +8,5 @@ namespace TestingAppWeb.Interfaces
         Task<List<(ChatMessageDto, MessageAction)>> GetMessagesToUpdateAsync(bool loadOld = false);
         Task<bool> EditMessageAsync(EditMessageRequest request);
         Task<bool> SendMessageAsync(ChatMessageDto messageDto, string username);
-        Task<bool> SendBotMessageASync(BotMessageRequest request);
     }
 }

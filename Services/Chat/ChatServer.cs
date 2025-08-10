@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.Chat;
 using TestingAppWeb.Services.Chat;
+using TestingAppWeb.Services.Chat.Bots;
 
 public class ChatServer
 {
@@ -35,15 +37,15 @@ public class ChatServer
 
         var allTasks = new List<(int UserId, ChatMSG Message, MessageAction Action)>();
 
-        ProcessAllPendingMessagesFromPeople(allTasks);
-        ProcessAllPendingMessagesFromBots(allTasks);
+        AddAllPendingMessagesFromPeople(allTasks);
+        AddAllPendingMessagesFromBots(allTasks);
 
         await ProcessTasksInDatabase(context, allTasks);
 
-        DistributeUpdatesToAllHandlers(allTasks);
+        await DistributeUpdatesToAllHandlers(allTasks);
     }
 
-    private async Task ProcessAllPendingMessagesFromPeople(List<(int UserId, ChatMSG Message, MessageAction Action)> allTasks)
+    private void AddAllPendingMessagesFromPeople(List<(int UserId, ChatMSG Message, MessageAction Action)> allTasks)
     {
         foreach (var userId in _handlerManager.GetAllUserIds())
         {
@@ -57,7 +59,7 @@ public class ChatServer
         }
     }
 
-    private async Task ProcessAllPendingMessagesFromBots(List<(int UserId, ChatMSG Message, MessageAction Action)> allTasks)
+    private void AddAllPendingMessagesFromBots(List<(int UserId, ChatMSG Message, MessageAction Action)> allTasks)
     {
         foreach (var botName in _chatBotsManager.GetAllBots())
         {
@@ -105,7 +107,7 @@ public class ChatServer
         await context.SaveChangesAsync();
     }
 
-    private void DistributeUpdatesToAllHandlers(List<(int, ChatMSG, MessageAction)> tasks)
+    private async Task DistributeUpdatesToAllHandlers(List<(int, ChatMSG, MessageAction)> tasks)
     {
         foreach (var (senderId, message, action) in tasks)
         {
@@ -115,26 +117,27 @@ public class ChatServer
                     .EnqueueIncomingUpdate((message, action));
             }
 
-            SendNewMessageToChatBots((message, action));
-        }
-    }
-
-    private async void SendNewMessageToChatBots((ChatMSG, MessageAction) task)
-    {
-        var chatBotNames = _chatBotsManager.GetAllBots().ToArray();
-
-        foreach (var name in chatBotNames)
-        {
-            if (_chatBotsManager.TryGetChatBot(name, out var bot))
+            foreach (var name in _chatBotsManager.GetAllBots())
             {
-                await bot.AcceptNewMessage(task)
-                         .ConfigureAwait(false);
+                if (_chatBotsManager.TryGetChatBot(name, out var bot))
+                {
+                    await bot.AcceptNewMessage((message, action))
+                             .ConfigureAwait(false);
+                }
             }
         }
     }
 
-    public async Task RegisterChatBot(string chatBotName, IChatBot chatBot)
+    public async Task RegisterChatBot(IChatBot chatBot)
     {
-        _chatBotsManager.GetOrCreateBot(chatBotName, chatBot);
+        await _chatBotsManager.GetOrCreateBot(chatBot.NAME, chatBot);
+    }
+
+    public async Task SetupBots()
+    {
+        var botServices = _serviceProvider.GetServices<IChatBot>();
+
+        foreach (var bot in botServices)
+            await RegisterChatBot(bot);
     }
 }
