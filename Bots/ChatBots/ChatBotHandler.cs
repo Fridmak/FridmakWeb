@@ -169,7 +169,7 @@ public class ChatBotHandler
         {
             MessageText = handle.messageText,
             SenderId = _botEntity.Id,
-            SentAt = DateTime.Now
+            SentAt = DateTimeOffset.UtcNow
         };
 
         return (message, MessageAction.Send);

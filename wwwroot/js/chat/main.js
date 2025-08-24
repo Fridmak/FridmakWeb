@@ -23,7 +23,7 @@ function toggleScrollButtonVisibility() {
 }
 
 async function initChat() {
-    loadMessages(false);
+    loadMessages(true);
     scrollDownSmooth(chatContainer);
 
     setInterval(async () => {

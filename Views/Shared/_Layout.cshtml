@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -40,7 +41,15 @@
                     @if (User.Identity.IsAuthenticated)
                     {
                         <li class="nav-item">
-                            <span class="nav-link text-dark">Здравствуйте, @User.Identity.Name</span>
+                            <span class="nav-link text-dark">
+                                Здравствуйте, 
+                                <a asp-controller="User" 
+                                   asp-action="Profile" 
+                                   asp-route-userId="@User.FindFirst(ClaimTypes.NameIdentifier)?.Value"
+                                   class = "text-dark text-decoration-none">
+                                    @User.Identity.Name
+                                </a>
+                            </span>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="User" asp-action="Logout">Выйти</a>

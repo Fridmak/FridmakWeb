@@ -14,5 +14,9 @@ namespace TestingAppWeb.Models
         public string Email { get; set; }
         [Required]
         public string Role { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "About")]
+        public string Bio { get; set; }
     }
 }

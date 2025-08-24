@@ -3,8 +3,6 @@
     ViewData["Title"] = "Chat";
 }
 
-@model IEnumerable<ChatMessageDto>
-
 <link rel="stylesheet" href="~/css/chat/button.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/chat/container.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/chat/form.css" asp-append-version="true" />
@@ -18,21 +16,7 @@
     <div class="chat-wrapper">
         <div class="chat-container" id="chat-container">
             <ul id="chat-messages">
-                @foreach (var message in Model)
-                {
-                    <li class="chat-message">
-                        <div class="message-content" data-id="@message.MessageId">
-                            <strong>@message.UserName</strong>
-                            <small> (@message.Timestamp.ToString("yyyy-MM-dd HH:mm")):</small>
-                            <p>@message.Text</p>
-                        </div>
-
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <button class="message-options" title="Действия">⋯</button>
-                        }
-                    </li>
-                }
+                <!-- Сообщения будут добавлены JS -->
             </ul>
         </div>
 
@@ -43,6 +27,7 @@
             <button type="submit">Отправить</button>
         </form>
     </div>
+    <script type="module" src="~/js/chat/main.js" asp-append-version="true"></script>
 }
 else
 {
@@ -53,5 +38,5 @@ else
 
 <script type="text/javascript">
     window.isAdmin = @((User.IsInRole("Admin")) ? "true" : "false");
+    window.userId = @((User.Identity.IsAuthenticated ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value : "null"));
 </script>
-<script type="module" src="~/js/chat/main.js" asp-append-version="true"></script>

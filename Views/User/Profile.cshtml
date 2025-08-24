@@ -1,0 +1,93 @@
+﻿@model TestingAppWeb.Models.ViewModels.UserProfileViewModel
+
+@{
+    ViewData["Title"] = $"{Model.Username}'s profile";
+    Layout = "_Layout";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="bg-gradient text-white text-center py-4">
+                    <h1 class="mb-0">@Model.Username</h1>
+                    <small class="text-white-75">
+                        @Model.Role
+                    </small>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" 
+                             style="width: 50px; height: 50px; font-size: 1.5rem;">
+                            @Model.Username[0].ToString().ToUpper()
+                        </div>
+                        <div>
+                            <h5 class="mb-0">@Model.Username</h5>
+                            <small class="text-muted">пользователь</small>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <strong><i class="bi bi-envelope-fill text-primary me-2"></i>Email:</strong>
+                            <span class="text-muted">@Model.Email</span>
+                        </li>
+                        <li class="mb-3">
+                            <strong><i class="bi bi-person-badge-fill text-success me-2"></i>Роль:</strong>
+                            <span class="badge bg-success text-white px-3 py-2 rounded-pill">
+                                @Model.Role
+                            </span>
+                        </li>
+                        @if (!string.IsNullOrWhiteSpace(Model.Bio))
+                        {
+                            <li class="mb-3">
+                                <strong><i class="bi bi-chat-left-text-fill text-info me-2"></i>О себе:</strong>
+                                <p class="text-muted mb-0 mt-1">@Model.Bio</p>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="mb-3 text-muted fst-italic">
+                                <i class="bi bi-chat-left-text-fill me-2"></i>Пока ничего не написал...
+                            </li>
+                        }
+                    </ul>
+
+                    @if (Model.IsOwnProfile)
+                    {
+                        <a asp-action="EditProfile"
+                           asp-route-id="@Model.UserId"
+                           asp-route-returnUrl="@Context.Request.Path@Context.Request.QueryString"
+                           class="btn btn-primary w-100 mt-3">
+                            <i class="bi bi-pencil"></i> Редактировать профиль
+                        </a>
+                    }
+                </div>
+
+                <div class="card-footer bg-light text-center text-muted small">
+                    Профиль загружен: @DateTime.Now.ToString("HH:mm dd.MM.yyyy")
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #6f42c1, #0d6efd);
+    }
+
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+</style>

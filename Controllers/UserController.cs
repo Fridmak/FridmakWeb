@@ -9,6 +9,7 @@ using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
+using TestingAppWeb.Models.ViewModels;
 
 namespace TestingAppWeb.Controllers
 {
@@ -31,6 +32,123 @@ namespace TestingAppWeb.Controllers
             ViewBag.BotsManager = botsManager;
 
             return View();
+        }
+
+        private IActionResult Redirectback()
+        {
+            var referer = Request.Headers["Referer"].ToString();
+            if (!string.IsNullOrEmpty(referer))
+                return Redirect(referer);
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        public IActionResult Profile(string userId)
+        {
+            var user = _userService.CheckProfileOpen(userId).Result;
+            if (user == null)
+            {
+                return Redirectback();
+            }
+
+            var viewModel = new UserProfileViewModel
+            {
+                Username = user.Username,
+                Email = user.Email,
+                Role = user.Role,
+                IsOwnProfile = true,
+                UserId = userId,
+                Bio = user.Bio,
+            };
+
+            return View(viewModel);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditProfile(string id, string returnUrl = null)
+        {
+            if (!int.TryParse(id, out int userId))
+                return BadRequest();
+
+            var user = await _userService.GetUserById(id);
+            if (user == null)
+                return NotFound();
+
+            if (user.Username != User.Identity?.Name)
+            {
+                return Redirectback();
+            }
+
+            var viewModel = new EditProfileViewModel
+            {
+                Username = user.Username,
+                Bio = user.Bio
+            };
+
+            ViewData["ReturnUrl"] = returnUrl;
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProfile(string id, EditProfileViewModel model, string returnUrl = null)
+        {
+            if (!int.TryParse(id, out int userId))
+                return BadRequest();
+
+            var user = await _userService.GetUserById(id);
+            if (user == null)
+                return NotFound();
+
+            if (user.Username != User.Identity?.Name)
+            {
+                TempData["Error"] = "Доступ запрещён.";
+                return RedirectToReturnUrl(returnUrl, () => RedirectToAction("Profile", new { userId = id }));
+            }
+
+            if (ModelState.IsValid)
+            {
+                await _userService.EditProfile(id, model.Username, model.Bio);
+
+                var updatedUser = await _userService.GetUserById(id);
+                if (updatedUser == null)
+                    return NotFound();
+
+                await UpdateClaims(updatedUser);
+
+                TempData["Success"] = "Профиль успешно обновлён!";
+                return RedirectToReturnUrl(returnUrl, () => RedirectToAction("Profile", new { userId = id }));
+            }
+
+            ViewData["ReturnUrl"] = returnUrl;
+            return View(model);
+        }
+
+        private async Task UpdateClaims(User updatedUser)
+        {
+            var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, updatedUser.Id.ToString()),
+                    new Claim(ClaimTypes.Name, updatedUser.Username),
+                    new Claim(ClaimTypes.Email, updatedUser.Email),
+                    new Claim(ClaimTypes.Role, updatedUser.Role)
+                };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2)
+            });
+        }
+
+        private IActionResult RedirectToReturnUrl(string returnUrl, Func<IActionResult> fallback)
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+            return fallback();
         }
 
         [Authorize(Roles = "Admin")]
@@ -65,7 +183,15 @@ namespace TestingAppWeb.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = await _userService.GetUserByUsernameAsync(model.UserName);
+                User user = null;
+                if (model.UserName.Contains("@"))
+                {
+                    user = await _userService.GetUserByMailAsync(model.UserName);
+                }
+                else
+                {
+                    user = await _userService.GetUserByUsernameAsync(model.UserName);
+                }
 
                 if (user != null && _userService.VerifyPassword(model.Password, user.PasswordHash))
                 {

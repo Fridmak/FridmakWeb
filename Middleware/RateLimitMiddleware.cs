@@ -4,7 +4,7 @@
     {
         private readonly ILogger<RateLimitMiddleware> _logger;
         private readonly RequestDelegate _next;
-        private static readonly Dictionary<string, (int Count, DateTime LastReset)> _ipCounts = new();
+        private static readonly Dictionary<string, (int Count, DateTimeOffset LastReset)> _ipCounts = new();
         private readonly int _limit = 1000;
         private readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
 
@@ -20,7 +20,7 @@
             var remoteIp = context.Connection.RemoteIpAddress;
 
             var ip = remoteIp.IsIPv4MappedToIPv6 ? remoteIp.MapToIPv4().ToString() : remoteIp.ToString();
-            var now = DateTime.UtcNow;
+            var now = DateTimeOffset.UtcNow;
 
             lock (_ipCounts)
             {

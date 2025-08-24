@@ -149,7 +149,7 @@ namespace TestingAppWeb.Services.Chat
 
             var msg = new ChatMSG
             {
-                SentAt = DateTime.UtcNow,
+                SentAt = DateTimeOffset.UtcNow,
                 SenderId = sender.Id,
                 MessageText = messageDto.Text
             };

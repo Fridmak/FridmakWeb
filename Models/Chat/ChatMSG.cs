@@ -13,6 +13,6 @@ namespace TestingAppWeb.Models.Chat
         [Required]
         public string MessageText { get; set; }
         [Required]
-        public DateTime SentAt { get; set; }
+        public DateTimeOffset SentAt { get; set; }
     }
 }

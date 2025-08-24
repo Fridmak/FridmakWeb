@@ -55,7 +55,7 @@ function appendMessage(messageList, msg) {
     li.classList.add('chat-message');
 
     const date = new Date(msg.timestamp);
-    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    const formattedDate = formatLocalDate(msg.timestamp);
 
     const div = document.createElement('div');
     div.classList.add('message-content');
@@ -102,3 +102,14 @@ export function scrollDownSmooth(chatContainer) {
     });
 }
 
+function formatLocalDate(timestamp) {
+    const date = new Date(timestamp);
+
+    return new Intl.DateTimeFormat('ru-RU', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date);
+}

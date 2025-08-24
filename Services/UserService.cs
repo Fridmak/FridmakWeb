@@ -13,12 +13,18 @@ namespace TestingAppWeb.Services
         private readonly AppDbContext _context;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UserService> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public UserService(AppDbContext context, ILogger<UserService> logger, IServiceProvider serviceProvider)
+        public UserService(
+            AppDbContext context,
+            ILogger<UserService> logger,
+            IServiceProvider serviceProvider,
+            IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _logger = logger;
             _serviceProvider = serviceProvider;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<User> GetUserByUsernameAsync(string username)
@@ -41,7 +47,8 @@ namespace TestingAppWeb.Services
                 Username = model.Username,
                 Email = model.Email,
                 PasswordHash = GetPasswordHash(model.Password),
-                Role = "User"
+                Role = "User",
+                Bio = ""
             };
 
             _context.Users.Add(user);
@@ -106,6 +113,46 @@ namespace TestingAppWeb.Services
         public async Task<ChatBotsManager> GetBotsManager()
         {
             return _serviceProvider.GetRequiredService<ChatBotsManager>();
+        }
+
+        public async Task<User> CheckProfileOpen(string userId)
+        {
+            var user = await GetUserById(userId);
+
+            if (user == null)
+                return null;
+
+            var currentUsername = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
+
+            if (user.Username != currentUsername)
+                return null;
+
+            return user;
+        }
+
+        public async Task<bool> EditProfile(string id, string userName, string bio)
+        {
+            var user = await GetUserById(id);
+
+            user.Username = userName;
+            user.Bio = bio;
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<User> GetUserById(string id)
+        {
+            if (!int.TryParse(id, out int userIdValue))
+                return null;
+
+            return await _context.Users.FirstOrDefaultAsync(user => user.Id == userIdValue);
+        }
+
+        public async Task<User> GetUserByMailAsync(string email)
+        {
+            return await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
         }
     }
 }

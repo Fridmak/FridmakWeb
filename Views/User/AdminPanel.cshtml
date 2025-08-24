@@ -12,7 +12,7 @@
         <h1 class="display-4">Here are people who wanted to add Fridmak to friends:</h1>
     </div>
 
-    @if (ViewBag.FriendsToApprove == null || !ViewBag.FriendsToApprove.Any())
+    @if (ViewBag.FriendsToApprove == null || ViewBag.FriendsToApprove.Count == 0)
     {
         <p class="no-items">No friends to be approved.</p>
     }
