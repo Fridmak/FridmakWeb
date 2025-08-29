@@ -72,6 +72,7 @@ namespace TestingAppWeb.Controllers
         {
             var messages = await GetMessagesAndActions(loadOld);
             var formattedMessages = messages.Select(m => new object[] { m.Item1, m.Item2 }).ToList();
+
             return Ok(formattedMessages);
         }
 

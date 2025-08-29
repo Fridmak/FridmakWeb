@@ -2,11 +2,8 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using TestingAppWeb.Bots.ChatBots;
-using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.ViewModels;
@@ -114,7 +111,9 @@ namespace TestingAppWeb.Controllers
                 if (updatedUser == null)
                     return NotFound();
 
-                await UpdateClaims(updatedUser);
+                if (!await UpdateClaims(updatedUser))
+                    return BadRequest();
+                    
 
                 TempData["Success"] = "Профиль успешно обновлён!";
                 return RedirectToReturnUrl(returnUrl, () => RedirectToAction("Profile", new { userId = id }));
@@ -124,7 +123,7 @@ namespace TestingAppWeb.Controllers
             return View(model);
         }
 
-        private async Task UpdateClaims(User updatedUser)
+        private async Task<bool> UpdateClaims(User updatedUser)
         {
             var claims = new List<Claim>
                 {
@@ -142,6 +141,8 @@ namespace TestingAppWeb.Controllers
                 IsPersistent = true,
                 ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2)
             });
+
+            return true;
         }
 
         private IActionResult RedirectToReturnUrl(string returnUrl, Func<IActionResult> fallback)
