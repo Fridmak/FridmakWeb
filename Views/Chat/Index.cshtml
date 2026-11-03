@@ -1,0 +1,42 @@
+﻿@using TestingAppWeb.Models.Chat
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<link rel="stylesheet" href="~/css/chat/button.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/container.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/form.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/message.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/chat/modal.css" asp-append-version="true" />
+
+<h2>Чат</h2>
+
+@if (User.Identity.IsAuthenticated)
+{
+    <div class="chat-wrapper">
+        <div class="chat-container" id="chat-container">
+            <ul id="chat-messages">
+                <!-- Сообщения будут добавлены JS -->
+            </ul>
+        </div>
+
+        <button id="scroll-down-btn" type="button">↓</button>
+
+        <form id="chat-form">
+            <input type="text" id="message" placeholder="Сообщение" required />
+            <button type="submit">Отправить</button>
+        </form>
+    </div>
+    <script type="module" src="~/js/chat/main.js" asp-append-version="true"></script>
+}
+else
+{
+    <div class="alert alert-warning">
+        Для участия в чате необходимо <a asp-controller="User" asp-action="Login">войти</a>
+    </div>
+}
+
+<script type="text/javascript">
+    window.isAdmin = @((User.IsInRole("Admin")) ? "true" : "false");
+    window.userId = @((User.Identity.IsAuthenticated ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value : "null"));
+</script>

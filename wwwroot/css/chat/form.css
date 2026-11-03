@@ -1,0 +1,34 @@
+﻿#chat-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+    #chat-form input[type="text"] {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+        #chat-form input[type="text"]:focus {
+            border-color: #007bff;
+        }
+
+    #chat-form button {
+        padding: 10px 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+    }
+
+        #chat-form button:hover {
+            background-color: #0056b3;
+        }
