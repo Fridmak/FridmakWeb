@@ -77,4 +77,3 @@ dotnet run
 ## Статус
 
 Учебный проект, писал для практики ASP.NET Core MVC и работы с EF Core.
-Код — в ветке `master`.
