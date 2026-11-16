@@ -13,11 +13,15 @@
         {
             using var scope = _serviceProvider.CreateScope();
             var chatServer = scope.ServiceProvider.GetRequiredService<ChatServer>();
-            await chatServer.SetupBots();
 
             try
             {
+                await chatServer.SetupBots();
                 await chatServer.ProcessAllPendingMessages();
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
             }
             catch (Exception ex)
             {
@@ -25,7 +29,14 @@
                 logger.LogError(ex, "Error in ChatBackgroundService");
             }
 
-            await Task.Delay(500, stoppingToken);
+            try
+            {
+                await Task.Delay(500, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
     }
 }

@@ -13,6 +13,7 @@
 
 @if (User.Identity.IsAuthenticated)
 {
+    @Html.AntiForgeryToken()
     <div class="chat-wrapper">
         <div class="chat-container" id="chat-container">
             <ul id="chat-messages">

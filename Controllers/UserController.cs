@@ -34,15 +34,15 @@ namespace TestingAppWeb.Controllers
         private IActionResult Redirectback()
         {
             var referer = Request.Headers["Referer"].ToString();
-            if (!string.IsNullOrEmpty(referer))
+            if (!string.IsNullOrEmpty(referer) && Url.IsLocalUrl(referer))
                 return Redirect(referer);
 
             return RedirectToAction("Index", "Home");
         }
 
-        public IActionResult Profile(string userId)
+        public async Task<IActionResult> Profile(string userId)
         {
-            var user = _userService.CheckProfileOpen(userId).Result;
+            var user = await _userService.CheckProfileOpen(userId);
             if (user == null)
             {
                 return Redirectback();
@@ -53,7 +53,7 @@ namespace TestingAppWeb.Controllers
                 Username = user.Username,
                 Email = user.Email,
                 Role = user.Role,
-                IsOwnProfile = true,
+                IsOwnProfile = user.Username == User.Identity?.Name,
                 UserId = userId,
                 Bio = user.Bio,
             };
@@ -180,6 +180,7 @@ namespace TestingAppWeb.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = "/Home/Index")
         {
             if (ModelState.IsValid)
@@ -254,7 +255,7 @@ namespace TestingAppWeb.Controllers
 
         public async Task<IActionResult> Logout()
         {
-            await _userService.LogoutAsync(User.Identity.Name);
+            await _userService.LogoutAsync(User.Identity?.Name ?? "unknown");
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }

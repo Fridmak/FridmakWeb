@@ -106,7 +106,7 @@ public class ChatBotHandler
     private async Task<ChatBotHandle> HandleAction(TaskItem task)
     {
         var user = await FindUserAsync(task.Message.SenderId);
-        if (user.Role == "Bot")
+        if (user == null || user.Role == "Bot")
             return _nullHandle;
 
         return task.Action switch

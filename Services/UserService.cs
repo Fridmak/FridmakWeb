@@ -83,6 +83,19 @@ namespace TestingAppWeb.Services
             return;
         }
 
+        public async Task<bool> SetRoleAsync(int userId, string role)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Role = role;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> AcceptFriendAsync(int id)
         {
             var friend = await _context.Friends.FindAsync(id);

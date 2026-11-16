@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Connections.Features;
-using System.Net;
+﻿using System.Net;
 
 namespace TestingAppWeb.MiddleWare
 {
@@ -21,8 +20,9 @@ namespace TestingAppWeb.MiddleWare
         {
             var remoteIp = context.Connection.RemoteIpAddress;
 
-            if (remoteIp == null) {
-                HandleNullIpClients(remoteIp, context);
+            if (remoteIp == null)
+            {
+                await HandleNullIpClients(context);
                 return;
             }
 
@@ -30,29 +30,30 @@ namespace TestingAppWeb.MiddleWare
 
             if (_blockedIps.Contains(ip.ToString()))
             {
-                HandleBlockedClients(ip, context);
+                await HandleBlockedClients(ip, context);
                 return;
             }
-            else
-            {
-                await _next.Invoke(context);
-            }
+
+            await _next.Invoke(context);
         }
 
-        private void HandleNullIpClients(IPAddress? remoteIp, HttpContext context)
+        private async Task HandleNullIpClients(HttpContext context)
         {
             _logger.LogWarning("Не удалось получить IP-адрес клиента.");
-            context.Response.StatusCode = 403;
-            context.Response.Redirect("/Error/Forbidden");
-            return;
+            await WriteForbidden(context);
         }
 
-        private void HandleBlockedClients(IPAddress ip, HttpContext context)
+        private async Task HandleBlockedClients(IPAddress ip, HttpContext context)
         {
             _logger.LogWarning("Заблокированный IP: {RemoteIp}", ip.ToString());
-            context.Response.StatusCode = 403;
-            context.Response.Redirect("/Error/Forbidden");
-            return;
+            await WriteForbidden(context);
+        }
+
+        private static async Task WriteForbidden(HttpContext context)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "text/plain; charset=utf-8";
+            await context.Response.WriteAsync("Forbidden");
         }
     }
 }

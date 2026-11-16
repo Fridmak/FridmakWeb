@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -26,6 +27,7 @@ namespace TestingAppWeb.Controllers
             return View();
         }
 
+        [Authorize]
         public async Task<IActionResult> FriendList()
         {
             var friends = await _homeService.GetFriendListAsync();
@@ -33,12 +35,15 @@ namespace TestingAppWeb.Controllers
             return View(friends);
         }
 
+        [Authorize]
         public IActionResult AddFriend()
         {
             return View();
         }
 
+        [Authorize]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddFriendForm(Friend friend)
         {
             if (!ModelState.IsValid)

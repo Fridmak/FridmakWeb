@@ -1,25 +1,24 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TestingAppWeb.Data;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TestingAppWeb.Interfaces;
-using TestingAppWeb.Models;
 using TestingAppWeb.Models.Chat;
-using TestingAppWeb.Services;
 
 namespace TestingAppWeb.Controllers
 {
+    [Authorize]
+    [AutoValidateAntiforgeryToken]
     public class ChatController : Controller
     {
-        private readonly IChatService _chatService;
-        private readonly string _botToken;
+        private const int MaxMessageLength = 2000;
 
-        public ChatController(IChatService chatService, IConfiguration configuration)
+        private readonly IChatService _chatService;
+
+        public ChatController(IChatService chatService)
         {
             _chatService = chatService;
-            _botToken = configuration["BotSettings:Token"]
-               ?? throw new InvalidOperationException("Bot token is not configured.");
         }
 
+        [HttpGet]
         public async Task<IActionResult> Index()
         {
             var messagesWithActions = await GetMessagesAndActions(true);
@@ -28,43 +27,54 @@ namespace TestingAppWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> EditMessage([FromBody] EditMessageRequest request)
+        public async Task<IActionResult> EditMessage([FromBody] EditMessageRequest? request)
         {
-            if (request == null)
+            if (request is null)
             {
                 return BadRequest(new { success = false, error = "Invalid request" });
             }
 
-            var success = await _chatService.EditMessageAsync(request);
+            var result = await _chatService.EditMessageAsync(request);
 
-            if (success)
+            return result switch
             {
-                return Ok(new { success = true });
-            }
-            else
-            {
-                return StatusCode(500, new { success = false, error = "Internal server error" });
-            }
+                MessageEditResult.Success => Ok(new { success = true }),
+                MessageEditResult.NotFound => NotFound(new { success = false, error = "Message not found" }),
+                MessageEditResult.Forbidden => StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    new { success = false, error = "You can only edit your own messages" }),
+                MessageEditResult.Invalid => BadRequest(
+                    new { success = false, error = $"Message must be between 1 and {MaxMessageLength} characters" }),
+                _ => StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { success = false, error = "Internal server error" })
+            };
         }
 
         [HttpPost]
-        public async Task<IActionResult> SendMessage([FromBody] ChatMessageDto messageDto)
+        public async Task<IActionResult> SendMessage([FromBody] ChatMessageDto? messageDto)
         {
-            if (!User.Identity.IsAuthenticated)
-                return Unauthorized();
+            if (messageDto is null || string.IsNullOrWhiteSpace(messageDto.Text))
+            {
+                return BadRequest(new { success = false, error = "Message is empty" });
+            }
 
-            var username = User.Identity.Name;
+            if (messageDto.Text.Length > MaxMessageLength)
+            {
+                return BadRequest(
+                    new { success = false, error = $"Message is too long (max {MaxMessageLength} characters)" });
+            }
 
-            var success = await _chatService.SendMessageAsync(messageDto, username);
+            var success = await _chatService.SendMessageAsync(messageDto);
 
             if (success)
             {
                 return Ok(new { success = true });
             }
-            else
-            {
-                return StatusCode(500, new { success = false, error = "Failed to send message" });
-            }
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new { success = false, error = "Failed to send message" });
         }
 
         [HttpGet]

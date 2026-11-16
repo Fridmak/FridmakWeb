@@ -80,11 +80,22 @@ public class ChatBotsManager
 
         var existingBot = await userControllerService.GetUserByUsernameAsync(username);
         if (existingBot != null)
+        {
+            if (existingBot.Role != "Bot")
+            {
+                await userControllerService.SetRoleAsync(existingBot.Id, "Bot");
+            }
+
             return existingBot;
+        }
 
         var botPassword = _configuration["BotSettings:DefaultPassword"];
         if (string.IsNullOrEmpty(botPassword))
-            throw new InvalidOperationException("Bot password is not configured.");
+        {
+            // Пароль бота не используется для входа. Генерируем его, чтобы не хранить секрет в репозитории.
+            botPassword = Guid.NewGuid().ToString("N") + "Aa1!";
+            _logger.LogInformation("Bot password is not configured; generated a one-time password for {BotName}.", name);
+        }
 
         var email = $"{username}@gmail.com";
 
@@ -92,16 +103,30 @@ public class ChatBotsManager
 
         if (!registrationSuccess)
         {
-            var bot = await userControllerService.GetUserByUsernameAsync(username);
-            bot.Role = "Bot";
-            if (bot != null) return bot;
+            var raceBot = await userControllerService.GetUserByUsernameAsync(username);
+            if (raceBot == null)
+            {
+                throw new InvalidOperationException($"Failed to register bot '{username}' and no existing user found.");
+            }
 
-            throw new InvalidOperationException($"Failed to register bot '{username}' and no existing user found.");
+            if (raceBot.Role != "Bot")
+            {
+                await userControllerService.SetRoleAsync(raceBot.Id, "Bot");
+            }
+
+            return raceBot;
         }
 
         var newBot = await userControllerService.GetUserByUsernameAsync(username);
         if (newBot == null)
+        {
             throw new InvalidOperationException($"Bot '{username}' was registered but could not be retrieved.");
+        }
+
+        if (newBot.Role != "Bot")
+        {
+            await userControllerService.SetRoleAsync(newBot.Id, "Bot");
+        }
 
         return newBot;
     }
@@ -110,19 +135,28 @@ public class ChatBotsManager
 
     public void TurnBotOff(string name)
     {
-        TryGetChatBot(name, out var bot);
+        if (!TryGetChatBot(name, out var bot))
+        {
+            _logger.LogWarning("Cannot turn off unknown bot {BotName}.", name);
+            return;
+        }
+
         bot.TurnBotOff();
     }
 
     public void TurnBotOn(string name)
     {
-        TryGetChatBot(name, out var bot);
+        if (!TryGetChatBot(name, out var bot))
+        {
+            _logger.LogWarning("Cannot turn on unknown bot {BotName}.", name);
+            return;
+        }
+
         bot.TurnBotOn();
     }
 
     public bool IsBotOn(string name)
     {
-        TryGetChatBot(name, out var bot);
-        return bot.IsWorking;
+        return TryGetChatBot(name, out var bot) && bot.IsWorking;
     }
 }

@@ -23,11 +23,20 @@ function toggleScrollButtonVisibility() {
 }
 
 async function initChat() {
-    loadMessages(true);
-    scrollDownSmooth(chatContainer);
+    try {
+        await loadMessages(true);
+        scrollDownSmooth(chatContainer);
+    } catch (error) {
+        console.error('Failed to load chat history:', error);
+        return;
+    }
 
     setInterval(async () => {
-        await loadMessages(false);
+        try {
+            await loadMessages(false);
+        } catch (error) {
+            console.error('Failed to poll chat messages:', error);
+        }
     }, 500);
 }
 
