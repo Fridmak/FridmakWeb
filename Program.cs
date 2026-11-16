@@ -31,7 +31,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddScoped<IChatService, ChatService>();
-builder.Services.AddScoped<IHomeService, HomeService>();
+builder.Services.AddScoped<IFriendshipService, FriendshipService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<ChatBotHandler>();

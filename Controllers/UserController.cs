@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TestingAppWeb.Bots.ChatBots;
+using TestingAppWeb.Extensions;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.ViewModels;
@@ -13,19 +14,19 @@ namespace TestingAppWeb.Controllers
     public class UserController : Controller
     {
         private readonly IUserService _userService;
+        private readonly IFriendshipService _friendshipService;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IFriendshipService friendshipService)
         {
             _userService = userService;
+            _friendshipService = friendshipService;
         }
 
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AdminPanel()
         {
-            var friendsToApprove = await _userService.GetFriendsToApproveAsync();
             var botsManager = await _userService.GetBotsManager();
 
-            ViewBag.FriendsToApprove = friendsToApprove;
             ViewBag.BotsManager = botsManager;
 
             return View();
@@ -40,27 +41,50 @@ namespace TestingAppWeb.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        [Authorize]
         public async Task<IActionResult> Profile(string userId)
         {
-            var user = await _userService.CheckProfileOpen(userId);
+            if (!int.TryParse(userId, out var profileId))
+            {
+                return NotFound();
+            }
+
+            var user = await _userService.GetUserById(userId);
             if (user == null)
             {
-                return Redirectback();
+                return NotFound();
             }
+
+            var currentUserId = User.GetUserId();
+            if (currentUserId == null)
+            {
+                return Challenge();
+            }
+
+            var isOwnProfile = currentUserId.Value == user.Id;
+            var isAdmin = User.IsInRole("Admin");
+            var friendship = isOwnProfile
+                ? null
+                : await _friendshipService.GetFriendshipAsync(currentUserId.Value, user.Id);
 
             var viewModel = new UserProfileViewModel
             {
                 Username = user.Username,
-                Email = user.Email,
-                Role = user.Role,
-                IsOwnProfile = user.Username == User.Identity?.Name,
-                UserId = userId,
+                Email = isOwnProfile || isAdmin ? user.Email : null,
+                Role = isOwnProfile || isAdmin ? user.Role : null,
+                IsOwnProfile = isOwnProfile,
+                UserId = user.Id.ToString(),
                 Bio = user.Bio,
+                FriendsCount = await _friendshipService.GetFriendCountAsync(user.Id),
+                FriendshipId = friendship?.FriendshipId,
+                FriendshipStatus = friendship?.Status,
+                IsIncomingRequest = friendship?.IsIncomingRequest ?? false
             };
 
             return View(viewModel);
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> EditProfile(string id, string returnUrl = null)
         {
@@ -86,6 +110,7 @@ namespace TestingAppWeb.Controllers
             return View(viewModel);
         }
 
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditProfile(string id, EditProfileViewModel model, string returnUrl = null)
@@ -150,22 +175,6 @@ namespace TestingAppWeb.Controllers
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);
             return fallback();
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPost]
-        public async Task<IActionResult> AcceptFriend(int id)
-        {
-            var success = await _userService.AcceptFriendAsync(id);
-            return RedirectToAction("AdminPanel");
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPost]
-        public async Task<IActionResult> RejectFriend(int id)
-        {
-            var success = await _userService.RejectFriendAsync(id);
-            return RedirectToAction("AdminPanel");
         }
 
         [HttpGet]
@@ -247,7 +256,7 @@ namespace TestingAppWeb.Controllers
                     return RedirectToAction("Login");
                 }
 
-                ModelState.AddModelError("Username", "Such user already exists");
+                ModelState.AddModelError("Username", "Such user or email already exists");
             }
 
             return View(model);
@@ -267,6 +276,7 @@ namespace TestingAppWeb.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> TurnBotOn(string botName)
         {
             var botsManager = HttpContext.RequestServices.GetRequiredService<ChatBotsManager>();
@@ -276,6 +286,7 @@ namespace TestingAppWeb.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> TurnBotOff(string botName)
         {
             var botsManager = HttpContext.RequestServices.GetRequiredService<ChatBotsManager>();

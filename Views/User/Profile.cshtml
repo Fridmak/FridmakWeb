@@ -1,4 +1,5 @@
-﻿@model TestingAppWeb.Models.ViewModels.UserProfileViewModel
+﻿@using TestingAppWeb.Models
+@model TestingAppWeb.Models.ViewModels.UserProfileViewModel
 
 @{
     ViewData["Title"] = $"{Model.Username}'s profile";
@@ -8,17 +9,23 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
+            @if (TempData["FriendMessage"] != null)
+            {
+                <div class="alert alert-info">@TempData["FriendMessage"]</div>
+            }
+
             <div class="card shadow-lg border-0 rounded-4">
                 <div class="bg-gradient text-white text-center py-4">
                     <h1 class="mb-0">@Model.Username</h1>
-                    <small class="text-white-75">
-                        @Model.Role
-                    </small>
+                    @if (!string.IsNullOrWhiteSpace(Model.Role))
+                    {
+                        <small class="text-white-75">@Model.Role</small>
+                    }
                 </div>
 
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center mb-4">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" 
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
                              style="width: 50px; height: 50px; font-size: 1.5rem;">
                             @Model.Username[0].ToString().ToUpper()
                         </div>
@@ -31,15 +38,25 @@
                     <hr>
 
                     <ul class="list-unstyled">
+                        @if (!string.IsNullOrWhiteSpace(Model.Email))
+                        {
+                            <li class="mb-3">
+                                <strong><i class="bi bi-envelope-fill text-primary me-2"></i>Email:</strong>
+                                <span class="text-muted">@Model.Email</span>
+                            </li>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.Role))
+                        {
+                            <li class="mb-3">
+                                <strong><i class="bi bi-person-badge-fill text-success me-2"></i>Роль:</strong>
+                                <span class="badge bg-success text-white px-3 py-2 rounded-pill">
+                                    @Model.Role
+                                </span>
+                            </li>
+                        }
                         <li class="mb-3">
-                            <strong><i class="bi bi-envelope-fill text-primary me-2"></i>Email:</strong>
-                            <span class="text-muted">@Model.Email</span>
-                        </li>
-                        <li class="mb-3">
-                            <strong><i class="bi bi-person-badge-fill text-success me-2"></i>Роль:</strong>
-                            <span class="badge bg-success text-white px-3 py-2 rounded-pill">
-                                @Model.Role
-                            </span>
+                            <strong><i class="bi bi-people-fill text-primary me-2"></i>Друзей:</strong>
+                            <span class="text-muted">@Model.FriendsCount</span>
                         </li>
                         @if (!string.IsNullOrWhiteSpace(Model.Bio))
                         {
@@ -64,6 +81,55 @@
                            class="btn btn-primary w-100 mt-3">
                             <i class="bi bi-pencil"></i> Редактировать профиль
                         </a>
+                    }
+                    else if (Model.FriendshipStatus == null || Model.FriendshipStatus == FriendshipStatus.Rejected)
+                    {
+                        <form asp-controller="Home" asp-action="SendFriendRequest" method="post" class="mt-3">
+                            <input type="hidden" name="userId" value="@Model.UserId" />
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-person-plus"></i>
+                                @(Model.FriendshipStatus == FriendshipStatus.Rejected
+                                    ? "Отправить заявку снова"
+                                    : "Добавить в друзья")
+                            </button>
+                        </form>
+                    }
+                    else if (Model.FriendshipStatus == FriendshipStatus.Pending && Model.IsIncomingRequest)
+                    {
+                        <div class="alert alert-info mt-3 mb-2">
+                            Этот пользователь хочет добавить вас в друзья.
+                        </div>
+                        <div class="d-flex gap-2">
+                            <form asp-controller="Home" asp-action="AcceptFriendRequest" method="post" class="flex-grow-1">
+                                <input type="hidden" name="id" value="@Model.FriendshipId" />
+                                <button type="submit" class="btn btn-success w-100">Принять</button>
+                            </form>
+                            <form asp-controller="Home" asp-action="RejectFriendRequest" method="post" class="flex-grow-1">
+                                <input type="hidden" name="id" value="@Model.FriendshipId" />
+                                <button type="submit" class="btn btn-outline-secondary w-100">Отклонить</button>
+                            </form>
+                        </div>
+                    }
+                    else if (Model.FriendshipStatus == FriendshipStatus.Pending)
+                    {
+                        <div class="alert alert-secondary mt-3 mb-2">Заявка отправлена и ждёт ответа.</div>
+                        <form asp-controller="Home" asp-action="CancelFriendRequest" method="post">
+                            <input type="hidden" name="id" value="@Model.FriendshipId" />
+                            <button type="submit" class="btn btn-outline-secondary w-100">Отменить заявку</button>
+                        </form>
+                    }
+                    else if (Model.FriendshipStatus == FriendshipStatus.Accepted)
+                    {
+                        <div class="alert alert-success mt-3 mb-2">Вы друзья.</div>
+                        <form asp-controller="Home" asp-action="RemoveFriend" method="post">
+                            <input type="hidden" name="id" value="@Model.FriendshipId" />
+                            <button type="submit" class="btn btn-outline-danger w-100">Удалить из друзей</button>
+                        </form>
+                    }
+                    else if (Model.FriendshipStatus == FriendshipStatus.Blocked)
+                    {
+                        <div class="alert alert-danger mt-3 mb-0">Пользователь недоступен для добавления.</div>
                     }
                 </div>
 

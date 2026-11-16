@@ -16,8 +16,8 @@
 ## Возможности
 
 - Регистрация и логин, хеширование паролей через BCrypt.
-- Профиль пользователя: bio и редактирование данных.
-- Друзья: глобальный список контактов с заявками и принятием (в планах — связи между пользователями).
+- Профиль пользователя: bio, редактирование данных, просмотр чужих профилей.
+- Друзья: поиск пользователей, заявки, принятие/отклонение, список друзей и удаление.
 - Чат: отправка, редактирование и удаление сообщений, история.
 - Чат-боты: цензор, помощник, мем-бот. Боты находятся в чате как обычные пользователи.
 - Модерация: список запрещённых слов в `Resources/BannedChatWords.txt`.
@@ -29,6 +29,8 @@
 
 - Чат и страницы друзей закрыты `[Authorize]`.
 - Редактировать и удалять сообщение может только его автор или администратор.
+- Друзья — это связи между пользователями, а не глобальный список контактов.
+- Email и роль видны только владельцу профиля и администратору.
 - POST-запросы чата и формы защищены antiforgery-токеном.
 - Cookie аутентификации: `HttpOnly`, `SameSite=Lax`, срок жизни 2 часа.
 - Секреты не хранятся в `appsettings.json`: пароль ботов генерируется автоматически,
@@ -39,9 +41,9 @@
 
 ```
 Controllers/        Home, User, Chat, Error
-Models/             User, Friend, ChatMSG, view models
-Data/               AppDbContext
-Services/           UserService, HomeService, ChatService
+Models/             User, Friendship, ChatMSG, view models
+Data/               AppDbContext, AdminSeeder
+Services/           UserService, FriendshipService, ChatService
 Services/Chat/      ChatServer, ChatHandler, ChatBackgroundService
 Bots/ChatBots/      ChatBotsManager, ChatBotHandler
 Services/Chat/Bots/ CensorshipBot, HelpBot, MemeBot
@@ -134,7 +136,6 @@ docker compose down -v   # вместе с базой
 ## Дальнейшие шаги
 
 - Перевести чат на SignalR вместо polling — подробная инструкция в [`docs/signalr-migration.md`](docs/signalr-migration.md).
-- Сделать друзей связями между пользователями, а не глобальным списком контактов.
 - Добавить WasmGate, Prometheus и Grafana, страницу метрик в админке.
 - Добавить интеграционные тесты на контроллеры, middleware и права доступа.
 - Вынести rate limiter в Redis, чтобы лимит работал между репликами.

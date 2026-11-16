@@ -1,30 +1,129 @@
-﻿@{
-    ViewData["Title"] = "Friend's list";
+﻿@model TestingAppWeb.Models.ViewModels.FriendsPageViewModel
+
+@{
+    ViewData["Title"] = "Друзья";
 }
 
-<link rel="stylesheet" href="~/css/lists.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/text.css" asp-append-version="true" />
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Друзья</h2>
+    <a asp-action="AddFriend" class="btn btn-primary">Найти пользователя</a>
+</div>
 
-<div class="card-list-container">
-    <div class="text-center">
-        <h1 class="display-4">Here are people who added Fridmak to their Friends:</h1>
+@if (TempData["FriendMessage"] != null)
+{
+    <div class="alert alert-info">@TempData["FriendMessage"]</div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <h3>Мои друзья <span class="badge bg-secondary">@Model.Friends.Count</span></h3>
+
+        @if (Model.Friends.Count == 0)
+        {
+            <p class="text-muted">Пока никого нет. Найди пользователя и отправь заявку.</p>
+        }
+        else
+        {
+            foreach (var friend in Model.Friends)
+            {
+                <div class="card mb-2">
+                    <div class="card-body d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <a asp-controller="User"
+                               asp-action="Profile"
+                               asp-route-userId="@friend.UserId"
+                               class="fw-bold text-decoration-none">
+                                @friend.Username
+                            </a>
+                            @if (!string.IsNullOrWhiteSpace(friend.Bio))
+                            {
+                                <div class="text-muted small">@friend.Bio</div>
+                            }
+                            <div class="text-muted small">
+                                Друзья с @friend.FriendsSince.ToLocalTime().ToString("dd.MM.yyyy")
+                            </div>
+                        </div>
+                        <form asp-action="RemoveFriend" method="post">
+                            <input type="hidden" name="id" value="@friend.FriendshipId" />
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        }
     </div>
 
-    @if (Model is null)
-    {
-        <p class="no-items">No friends found.</p>
-    }
-    else
-    {
-        foreach (var friend in Model)
+    <div class="col-lg-6">
+        <h3>Входящие заявки <span class="badge bg-secondary">@Model.IncomingRequests.Count</span></h3>
+
+        @if (Model.IncomingRequests.Count == 0)
         {
-            <div class="card">
-                <h2 class="card__title">@friend.Name</h2>
-                <div class="card__content">
-                    <p>Age: @friend.Age</p>
-                    <p>Contact: @friend.Contact</p>
-                </div>
-            </div>
+            <p class="text-muted">Нет входящих заявок.</p>
         }
-    }
+        else
+        {
+            foreach (var request in Model.IncomingRequests)
+            {
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <a asp-controller="User"
+                           asp-action="Profile"
+                           asp-route-userId="@request.UserId"
+                           class="fw-bold text-decoration-none">
+                            @request.Username
+                        </a>
+                        @if (!string.IsNullOrWhiteSpace(request.Bio))
+                        {
+                            <div class="text-muted small">@request.Bio</div>
+                        }
+                        <div class="text-muted small">
+                            Заявка от @request.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <form asp-action="AcceptFriendRequest" method="post">
+                                <input type="hidden" name="id" value="@request.FriendshipId" />
+                                <button type="submit" class="btn btn-success btn-sm">Принять</button>
+                            </form>
+                            <form asp-action="RejectFriendRequest" method="post">
+                                <input type="hidden" name="id" value="@request.FriendshipId" />
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">Отклонить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+        <h3 class="mt-4">Исходящие заявки <span class="badge bg-secondary">@Model.OutgoingRequests.Count</span></h3>
+
+        @if (Model.OutgoingRequests.Count == 0)
+        {
+            <p class="text-muted">Нет исходящих заявок.</p>
+        }
+        else
+        {
+            foreach (var request in Model.OutgoingRequests)
+            {
+                <div class="card mb-2">
+                    <div class="card-body d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <a asp-controller="User"
+                               asp-action="Profile"
+                               asp-route-userId="@request.UserId"
+                               class="fw-bold text-decoration-none">
+                                @request.Username
+                            </a>
+                            <div class="text-muted small">
+                                Отправлена @request.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                            </div>
+                        </div>
+                        <form asp-action="CancelFriendRequest" method="post">
+                            <input type="hidden" name="id" value="@request.FriendshipId" />
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Отменить</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 </div>

@@ -20,6 +20,7 @@ namespace TestingAppWeb.Migrations
                 .HasAnnotation("ProductVersion", "9.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("TestingAppWeb.Models.Chat.ChatMSG", b =>
@@ -42,12 +43,14 @@ namespace TestingAppWeb.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SenderId");
+                    b.HasIndex("SentAt");
+
+                    b.HasIndex("SenderId", "SentAt");
 
                     b.ToTable("ChatMessages");
                 });
 
-            modelBuilder.Entity("TestingAppWeb.Models.Friend", b =>
+            modelBuilder.Entity("TestingAppWeb.Models.Friendship", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -55,22 +58,31 @@ namespace TestingAppWeb.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Age")
+                    b.Property<int>("AddresseeId")
                         .HasColumnType("integer");
 
-                    b.Property<bool>("Approved")
-                        .HasColumnType("boolean");
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Contact")
-                        .HasColumnType("text");
+                    b.Property<int>("RequesterId")
+                        .HasColumnType("integer");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<DateTimeOffset?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Friends");
+                    b.HasIndex("AddresseeId", "Status");
+
+                    b.HasIndex("RequesterId", "AddresseeId")
+                        .IsUnique();
+
+                    b.HasIndex("RequesterId", "Status");
+
+                    b.ToTable("Friendships");
                 });
 
             modelBuilder.Entity("TestingAppWeb.Models.User", b =>
@@ -88,7 +100,7 @@ namespace TestingAppWeb.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("citext");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -100,9 +112,15 @@ namespace TestingAppWeb.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("citext");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -116,6 +134,25 @@ namespace TestingAppWeb.Migrations
                         .IsRequired();
 
                     b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("TestingAppWeb.Models.Friendship", b =>
+                {
+                    b.HasOne("TestingAppWeb.Models.User", "Addressee")
+                        .WithMany()
+                        .HasForeignKey("AddresseeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TestingAppWeb.Models.User", "Requester")
+                        .WithMany()
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Addressee");
+
+                    b.Navigation("Requester");
                 });
 #pragma warning restore 612, 618
         }

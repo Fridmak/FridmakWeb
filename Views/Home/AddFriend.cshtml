@@ -1,30 +1,102 @@
-﻿@{
-    ViewData["Title"] = "Friends add request";
+﻿@using TestingAppWeb.Models
+@model TestingAppWeb.Models.ViewModels.AddFriendViewModel
+
+@{
+    ViewData["Title"] = "Поиск друзей";
 }
 
-@model TestingAppWeb.Models.Friend
+<h2>Найти пользователя</h2>
 
-<link rel="stylesheet" href="~/css/form.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/button.css" asp-append-version="true" />
+<form asp-action="AddFriend" method="get" class="row g-2 mb-4">
+    <div class="col">
+        <input name="query"
+               value="@Model.Query"
+               class="form-control"
+               placeholder="Имя или email (минимум 2 символа)" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Найти</button>
+    </div>
+</form>
 
-<div class="form-container">
-    <h1 class="display-4">You can make your friend request to Fridmak below:</h1>
-    <form asp-action="AddFriendForm" asp-controller="Home" method="post">
-        <div class="form-group">
-            <label asp-for="Name"></label>
-            <input asp-for="Name" class="form-control" placeholder="What's your name?" />
-        </div>
+@if (TempData["FriendMessage"] != null)
+{
+    <div class="alert alert-info">@TempData["FriendMessage"]</div>
+}
 
-        <div class="form-group mt-4">
-            <label asp-for="Age"></label>
-            <input asp-for="Age" class="form-control" type="number" placeholder="0" />
-        </div>
+@if (!string.IsNullOrWhiteSpace(Model.Query))
+{
+    if (Model.Results.Count == 0)
+    {
+        <p class="text-muted">Ничего не найдено.</p>
+    }
+    else
+    {
+        foreach (var user in Model.Results)
+        {
+            <div class="card mb-2">
+                <div class="card-body d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <a asp-controller="User"
+                           asp-action="Profile"
+                           asp-route-userId="@user.UserId"
+                           class="fw-bold text-decoration-none">
+                            @user.Username
+                        </a>
+                        @if (!string.IsNullOrWhiteSpace(user.Bio))
+                        {
+                            <div class="text-muted small">@user.Bio</div>
+                        }
+                    </div>
 
-        <div class="form-group mt-4">
-            <label asp-for="Contact"></label>
-            <input asp-for="Contact" class="form-control" placeholder="Provide us with your contact please" />
-        </div>
-
-        <button class="btn btn-primary mt-4 w-100" type="submit">Send</button>
-    </form>
-</div>
+                    <div class="d-flex gap-2 align-items-center">
+                        @if (user.Status == FriendshipStatus.Accepted)
+                        {
+                            <span class="badge bg-success">Уже друзья</span>
+                            <a asp-controller="User"
+                               asp-action="Profile"
+                               asp-route-userId="@user.UserId"
+                               class="btn btn-outline-primary btn-sm">
+                                Профиль
+                            </a>
+                        }
+                        else if (user.Status == FriendshipStatus.Pending && user.IsIncomingRequest)
+                        {
+                            <span class="badge bg-info text-dark">Входящая заявка</span>
+                            <form asp-action="AcceptFriendRequest" method="post">
+                                <input type="hidden" name="id" value="@user.FriendshipId" />
+                                <button type="submit" class="btn btn-success btn-sm">Принять</button>
+                            </form>
+                            <form asp-action="RejectFriendRequest" method="post">
+                                <input type="hidden" name="id" value="@user.FriendshipId" />
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">Отклонить</button>
+                            </form>
+                        }
+                        else if (user.Status == FriendshipStatus.Pending)
+                        {
+                            <span class="badge bg-warning text-dark">Заявка отправлена</span>
+                            <form asp-action="CancelFriendRequest" method="post">
+                                <input type="hidden" name="id" value="@user.FriendshipId" />
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">Отменить</button>
+                            </form>
+                        }
+                        else if (user.Status == FriendshipStatus.Blocked)
+                        {
+                            <span class="badge bg-danger">Недоступен</span>
+                        }
+                        else
+                        {
+                            <form asp-action="SendFriendRequest" method="post">
+                                <input type="hidden" name="userId" value="@user.UserId" />
+                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    @(user.Status == FriendshipStatus.Rejected ? "Отправить снова" : "Добавить")
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+}
