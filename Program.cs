@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
+    options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     )
 );
@@ -34,7 +34,6 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ChatBotHandler>();
 builder.Services.AddSingleton<ChatHandlerManager>();
 builder.Services.AddSingleton<ChatBotsManager>();
@@ -58,6 +57,35 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
+if (builder.Configuration.GetValue("Database:MigrateOnStartup", false))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    const int maxAttempts = 10;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+    {
+        try
+        {
+            await db.Database.MigrateAsync();
+            startupLogger.LogInformation("Database migrations applied.");
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            startupLogger.LogWarning(
+                ex,
+                "Database migration attempt {Attempt}/{MaxAttempts} failed. Retrying in 3 seconds...",
+                attempt,
+                maxAttempts);
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+    }
+}
+
+await AdminSeeder.SeedAsync(app.Services, builder.Configuration);
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -73,13 +101,31 @@ app.UseWhen(
     appBuilder => appBuilder.UseMiddleware<IpFilterMiddleWare>() // custom
 );
 
-app.UseHttpsRedirection();
+if (builder.Configuration.GetValue("Https:Redirect", true))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/health", async (AppDbContext db) =>
+{
+    try
+    {
+        return await db.Database.CanConnectAsync()
+            ? Results.Ok(new { status = "Healthy" })
+            : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+    catch
+    {
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    }
+});
 
 app.MapControllerRoute(
     name: "default",

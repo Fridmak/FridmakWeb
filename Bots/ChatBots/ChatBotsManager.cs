@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;

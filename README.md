@@ -7,7 +7,7 @@
 ## Стек
 
 - .NET 8, ASP.NET Core MVC
-- Entity Framework Core 9 + SQL Server
+- Entity Framework Core 9 + PostgreSQL (Npgsql)
 - Cookie-аутентификация, BCrypt для паролей
 - Фоновый сервис (`BackgroundService`) для обработки сообщений
 - Собственные middleware: rate limiting и IP-фильтр
@@ -55,29 +55,30 @@ Migrations/         миграции EF Core
 
 ## Как запустить
 
-1. Установи .NET 8 SDK и SQL Server LocalDB (или обычный SQL Server).
+1. Установи .NET 8 SDK и PostgreSQL (проще всего — через Docker Compose, см. ниже).
 
-2. Укажи строку подключения в `appsettings.json`:
+2. Укажи строку подключения в `appsettings.json` или через переменную окружения:
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=TestingAppWebDb;Trusted_Connection=True;MultipleActiveResultSets=true"
+  "DefaultConnection": "Host=localhost;Port=5434;Database=fridmakweb;Username=fridmak;Password=change_me"
 }
 ```
 
-3. Примени миграции (если `dotnet ef` ещё не установлен — `dotnet tool install --global dotnet-ef`):
+Для локального запуска удобнее задать строку подключения через окружение:
+
+```powershell
+$env:ConnectionStrings__DefaultConnection="Host=localhost;Port=5434;Database=fridmakweb;Username=fridmak;Password=..."
+dotnet run --urls http://localhost:5295
+```
+
+3. Примени миграции:
 
 ```bash
 dotnet ef database update
 ```
 
-4. Запусти:
-
-```bash
-dotnet run --urls http://localhost:5295
-```
-
-5. Открой `http://localhost:5295`.
+4. Открой `http://localhost:5295`.
 
 Для HTTPS-профиля используй `https://localhost:7168` (порт из `Properties/launchSettings.json`).
 
@@ -90,14 +91,54 @@ dotnet run --urls http://localhost:5295
 }
 ```
 
+## Запуск в Docker
+
+Нужен Docker Desktop с Linux-контейнерами.
+
+1. Создай `.env` из примера и задай свои пароли:
+
+```bash
+cp .env.example .env
+```
+
+В PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+2. Подними стек:
+
+```bash
+docker compose up --build -d
+```
+
+3. Открой:
+
+- приложение — http://localhost:8081
+- PostgreSQL — `localhost:5434`, пользователь и пароль из `POSTGRES_USER` и `POSTGRES_PASSWORD`
+- админ — логин и пароль из `ADMIN_USERNAME` и `ADMIN_PASSWORD`
+
+Миграции применяются на старте. Если админа ещё нет, он создаётся автоматически.
+Порты `8081` и `5434` выбраны, чтобы не конфликтовать с Microservices (`8080` и `5433`).
+
+4. Полезные команды:
+
+```bash
+docker compose ps
+docker compose logs -f app
+docker compose down
+docker compose down -v   # вместе с базой
+```
+
 ## Дальнейшие шаги
 
-- Docker Compose с SQL Server и одной командой запуска.
 - Перевести чат на SignalR вместо polling.
 - Сделать друзей связями между пользователями, а не глобальным списком контактов.
 - Добавить WasmGate, Prometheus и Grafana, страницу метрик в админке.
 - Добавить интеграционные тесты на контроллеры, middleware и права доступа.
 - Вынести rate limiter в Redis, чтобы лимит работал между репликами.
+- Опционально: ClickHouse для аналитики событий чата и админ-отчётов.
 
 ## Чему научился
 

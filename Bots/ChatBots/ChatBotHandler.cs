@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 using TestingAppWeb.Data;
 using TestingAppWeb.Interfaces;

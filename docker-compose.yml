@@ -1,0 +1,54 @@
+name: fridmakweb
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fridmakweb}
+      POSTGRES_USER: ${POSTGRES_USER:-fridmak}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Https__Redirect: "false"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-fridmakweb};Username=${POSTGRES_USER:-fridmak};Password=${POSTGRES_PASSWORD};"
+      Database__MigrateOnStartup: "true"
+      Seed__AdminUsername: ${ADMIN_USERNAME:-admin}
+      Seed__AdminEmail: ${ADMIN_EMAIL:-admin@example.com}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      RateLimit__Limit: "1000"
+      RateLimit__WindowSeconds: "60"
+    ports:
+      - "8081:8080"
+    volumes:
+      - dataprotection-keys:/home/app/.aspnet/DataProtection-Keys
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  postgres-data:
+  dataprotection-keys:
