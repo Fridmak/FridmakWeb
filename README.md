@@ -133,7 +133,7 @@ docker compose down -v   # вместе с базой
 
 ## Дальнейшие шаги
 
-- Перевести чат на SignalR вместо polling.
+- Перевести чат на SignalR вместо polling — подробная инструкция в [`docs/signalr-migration.md`](docs/signalr-migration.md).
 - Сделать друзей связями между пользователями, а не глобальным списком контактов.
 - Добавить WasmGate, Prometheus и Grafana, страницу метрик в админке.
 - Добавить интеграционные тесты на контроллеры, middleware и права доступа.
