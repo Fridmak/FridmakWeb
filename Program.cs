@@ -1,13 +1,17 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Prometheus;
 using System.Text.Json.Serialization;
 using TestingAppWeb.Data;
 using TestingAppWeb.Extensions;
 using TestingAppWeb.Middleware;
 using TestingAppWeb.MiddleWare;
 using TestingAppWeb.Options;
-using TestingAppWeb.Services;
+using TestingAppWeb.Services.Friends;
+using TestingAppWeb.Services.Observability;
+using TestingAppWeb.Services.Seed;
+using TestingAppWeb.Services.Users;
 using TestingAppWeb.Services.Chat;
 using TestingAppWeb.Services.Chat.Bots;
 
@@ -45,6 +49,31 @@ builder.Services
     .AddOptions<SeedOptions>()
     .Bind(builder.Configuration.GetSection(SeedOptions.SectionName))
     .ValidateOnStart();
+
+builder.Services
+    .AddOptions<MetricsOptions>()
+    .Bind(builder.Configuration.GetSection(MetricsOptions.SectionName))
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<PrometheusOptions>()
+    .Bind(builder.Configuration.GetSection(PrometheusOptions.SectionName))
+    .Validate(
+        options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _),
+        "Prometheus:BaseUrl must be an absolute URL.")
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<AppMetrics>();
+builder.Services.AddHttpClient<IPrometheusMetricsService, PrometheusMetricsService>(
+    (serviceProvider, client) =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<IOptions<PrometheusOptions>>()
+            .Value;
+
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+        client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+    });
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -89,6 +118,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseHttpMetrics();
+
 app.UseMiddleware<RateLimitMiddleware>();
 
 app.UseWhen(
@@ -104,6 +135,30 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+var metricsToken = app.Services
+    .GetRequiredService<IOptions<MetricsOptions>>()
+    .Value
+    .Token;
+
+app.UseWhen(
+    context => context.Request.Path.StartsWithSegments("/metrics"),
+    branch =>
+    {
+        branch.Use(async (context, next) =>
+        {
+            if (string.IsNullOrWhiteSpace(metricsToken) ||
+                context.Request.Headers.Authorization != $"Bearer {metricsToken}")
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
+
+            await next();
+        });
+    });
+
+app.MapMetrics("/metrics");
 
 app.MapGet("/health", async (AppDbContext db) =>
 {

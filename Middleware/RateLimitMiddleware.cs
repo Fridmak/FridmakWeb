@@ -11,6 +11,7 @@ namespace TestingAppWeb.Middleware
         private static DateTimeOffset _lastCleanup = DateTimeOffset.UtcNow;
         private readonly int _limit;
         private readonly TimeSpan _interval;
+        private readonly bool _enabled;
 
         public RateLimitMiddleware(
             ILogger<RateLimitMiddleware> logger,
@@ -21,10 +22,17 @@ namespace TestingAppWeb.Middleware
             _next = next;
             _limit = options.Value.Limit;
             _interval = TimeSpan.FromSeconds(options.Value.WindowSeconds);
+            _enabled = options.Value.Enabled;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
+            if (!_enabled)
+            {
+                await _next(context);
+                return;
+            }
+
             var remoteIp = context.Connection.RemoteIpAddress;
             if (remoteIp == null)
             {

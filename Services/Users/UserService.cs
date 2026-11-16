@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
 using TestingAppWeb.Models;
+using TestingAppWeb.Services.Observability;
 
-namespace TestingAppWeb.Services
+namespace TestingAppWeb.Services.Users
 {
     public interface IUserService
     {
@@ -50,11 +51,16 @@ namespace TestingAppWeb.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<UserService> _logger;
+        private readonly AppMetrics _metrics;
 
-        public UserService(AppDbContext context, ILogger<UserService> logger)
+        public UserService(
+            AppDbContext context,
+            ILogger<UserService> logger,
+            AppMetrics metrics)
         {
             _context = context;
             _logger = logger;
+            _metrics = metrics;
         }
 
         public async Task<User?> GetUserByUsernameAsync(
@@ -110,6 +116,7 @@ namespace TestingAppWeb.Services
             });
 
             await _context.SaveChangesAsync(cancellationToken);
+            _metrics.Registrations.Inc();
             return true;
         }
 

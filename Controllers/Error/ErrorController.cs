@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace TestingAppWeb.Controllers
+namespace TestingAppWeb.Controllers.Error
 {
     public class ErrorController : Controller
     {

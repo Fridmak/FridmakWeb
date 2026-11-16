@@ -3,7 +3,7 @@ using TestingAppWeb.Data;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.ViewModels;
 
-namespace TestingAppWeb.Services
+namespace TestingAppWeb.Services.Friends
 {
     public interface IFriendshipService
     {

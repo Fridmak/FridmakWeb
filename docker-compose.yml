@@ -36,10 +36,13 @@ services:
       Seed__AdminUsername: ${ADMIN_USERNAME:-admin}
       Seed__AdminEmail: ${ADMIN_EMAIL:-admin@example.com}
       Seed__AdminPassword: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
-      RateLimit__Limit: "1000"
-      RateLimit__WindowSeconds: "60"
+      RateLimit__Enabled: "false"
+      IpFilter__Enabled: "false"
+      Metrics__Token: ${METRICS_TOKEN:?set METRICS_TOKEN in .env}
+      Prometheus__BaseUrl: http://prometheus:9090
+      Prometheus__GrafanaUrl: http://localhost:3000
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8082:8080"
     volumes:
       - dataprotection-keys:/home/app/.aspnet/DataProtection-Keys
     healthcheck:
@@ -49,6 +52,75 @@ services:
       retries: 12
       start_period: 30s
 
+  wasmgate:
+    build:
+      context: .
+      dockerfile: deploy/wasmgate/Dockerfile
+      args:
+        WASMGATE_REF: ${WASMGATE_REF:-8aa95f56f9a3a2c67cf079f23abcc5ed695d3238}
+        VERSION: ${WASMGATE_VERSION:-metrics}
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      WASMGATE_ADMIN_TOKEN: ${WASMGATE_ADMIN_TOKEN:?set WASMGATE_ADMIN_TOKEN in .env}
+    ports:
+      - "8081:8080"
+      - "127.0.0.1:19099:9099"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -H \"Authorization: Bearer $$WASMGATE_ADMIN_TOKEN\" http://127.0.0.1:9099/healthz >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+      wasmgate:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        printf '%s' "$$WASMGATE_ADMIN_TOKEN" > /tmp/wasmgate-admin-token
+        printf '%s' "$$APP_METRICS_TOKEN" > /tmp/app-metrics-token
+        exec /bin/prometheus \
+          --config.file=/etc/prometheus/prometheus.yml \
+          --storage.tsdb.path=/prometheus \
+          --storage.tsdb.retention.time=15d \
+          --web.listen-address=0.0.0.0:9090
+    environment:
+      WASMGATE_ADMIN_TOKEN: ${WASMGATE_ADMIN_TOKEN:?set WASMGATE_ADMIN_TOKEN in .env}
+      APP_METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN in .env}
+    volumes:
+      - ./deploy/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9091:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/fridmakweb.json
+    volumes:
+      - ./deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+
 volumes:
   postgres-data:
   dataprotection-keys:
+  prometheus-data:
+  grafana-data:

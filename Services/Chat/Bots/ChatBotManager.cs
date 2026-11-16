@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using TestingAppWeb.Models;
 using TestingAppWeb.Options;
+using TestingAppWeb.Services.Users;
 
 namespace TestingAppWeb.Services.Chat.Bots
 {

@@ -4,7 +4,7 @@ using TestingAppWeb.Extensions;
 using TestingAppWeb.Models.Chat;
 using TestingAppWeb.Services.Chat;
 
-namespace TestingAppWeb.Controllers
+namespace TestingAppWeb.Controllers.Chat
 {
     [Authorize]
     [AutoValidateAntiforgeryToken]

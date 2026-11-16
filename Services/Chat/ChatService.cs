@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
 using TestingAppWeb.Models.Chat;
+using TestingAppWeb.Services.Observability;
 
 namespace TestingAppWeb.Services.Chat
 {
@@ -31,15 +32,18 @@ namespace TestingAppWeb.Services.Chat
         private readonly AppDbContext _context;
         private readonly ILogger<ChatService> _logger;
         private readonly ChatSessionManager _sessionManager;
+        private readonly AppMetrics _metrics;
 
         public ChatService(
             AppDbContext context,
             ILogger<ChatService> logger,
-            ChatSessionManager sessionManager)
+            ChatSessionManager sessionManager,
+            AppMetrics metrics)
         {
             _context = context;
             _logger = logger;
             _sessionManager = sessionManager;
+            _metrics = metrics;
         }
 
         public async Task<List<(ChatMessageDto, MessageAction)>> GetMessagesToUpdateAsync(
@@ -139,6 +143,9 @@ namespace TestingAppWeb.Services.Chat
             {
                 var session = _sessionManager.GetOrCreateSession(userId);
                 session.EnqueueOutgoing((messageForQueue, action));
+                _metrics.ChatMessages
+                    .WithLabels(action == MessageAction.Delete ? "delete" : "edit")
+                    .Inc();
                 return MessageEditResult.Success;
             }
             catch (Exception ex)
@@ -179,6 +186,7 @@ namespace TestingAppWeb.Services.Chat
             {
                 var session = _sessionManager.GetOrCreateSession(userId);
                 session.EnqueueOutgoing((message, MessageAction.Send));
+                _metrics.ChatMessages.WithLabels("send").Inc();
                 return true;
             }
             catch (Exception ex)

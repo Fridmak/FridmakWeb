@@ -6,9 +6,10 @@ using System.Security.Claims;
 using TestingAppWeb.Extensions;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.ViewModels;
-using TestingAppWeb.Services;
+using TestingAppWeb.Services.Friends;
+using TestingAppWeb.Services.Users;
 
-namespace TestingAppWeb.Controllers
+namespace TestingAppWeb.Controllers.Profile
 {
     [Authorize]
     public class ProfileController : Controller

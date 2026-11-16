@@ -4,6 +4,8 @@ namespace TestingAppWeb.Options
     {
         public const string SectionName = "IpFilter";
 
+        public bool Enabled { get; set; } = true;
+
         public List<string> BlockedIps { get; set; } = new();
     }
 }

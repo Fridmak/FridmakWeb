@@ -1,0 +1,31 @@
+version: 1
+
+# Public HTTP edge for FridmakWeb.
+# WasmGate is L4/TCP: it forwards HTTP and WebSocket bytes to app:8080.
+# The admin endpoint is only published on host loopback and requires a bearer token.
+admin_addr: "0.0.0.0:9099"
+admin_allow_remote: true
+admin_pprof: false
+
+listeners:
+  - name: http
+    addr: "0.0.0.0:8080"
+    upstream_pool: app
+    max_conns: 10000
+    dial_timeout: 5s
+    idle_timeout: 0s
+    rate_limit:
+      max: 200
+      subnet_max: 1000
+      max_concurrent: 100
+      window: 1s
+      ban_duration: 5s
+
+pools:
+  app:
+    balance: round_robin
+    servers:
+      - "app:8080"
+    health_check:
+      interval: 5s
+      timeout: 1s

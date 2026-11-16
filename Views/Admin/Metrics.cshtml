@@ -1,0 +1,133 @@
+@using TestingAppWeb.Services.Observability
+@model PrometheusMetricsSnapshot
+
+@{
+    ViewData["Title"] = "Метрики";
+    var grafanaUrl = ViewBag.GrafanaUrl as string;
+}
+
+@functions {
+    private static string Format(double? value, string suffix = "")
+    {
+        return value.HasValue ? $"{value.Value:0.##}{suffix}" : "—";
+    }
+
+    private static string UpBadge(double? value)
+    {
+        return value switch
+        {
+            1 => "success",
+            0 => "danger",
+            _ => "secondary"
+        };
+    }
+
+    private static string UpText(double? value)
+    {
+        return value switch
+        {
+            1 => "up",
+            0 => "down",
+            _ => "нет данных"
+        };
+    }
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Метрики</h2>
+        <div class="text-muted small">
+            Данные Prometheus на @Model.CollectedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Назад в админку</a>
+        @if (!string.IsNullOrWhiteSpace(grafanaUrl))
+        {
+            <a href="@grafanaUrl" target="_blank" rel="noopener" class="btn btn-primary">Открыть Grafana</a>
+        }
+    </div>
+</div>
+
+@if (!Model.HasData)
+{
+    <div class="alert alert-warning">
+        Prometheus пока не отвечает. Проверь, что контейнеры <code>prometheus</code> и
+        <code>grafana</code> запущены, а приложение скрапится по адресу
+        <code>app:8080/metrics</code>.
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Приложение</div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="fs-4">@Format(Model.HttpRequestsPerSecond, " req/s")</span>
+                    <span class="badge bg-@UpBadge(Model.AppUp)">@UpText(Model.AppUp)</span>
+                </div>
+                <div class="text-muted small mt-2">HTTP-запросы в секунду</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Чат</div>
+                <div class="fs-4 mt-2">@Format(Model.ChatMessagesPerMinute, " / мин")</div>
+                <div class="text-muted small mt-2">Сообщений в минуту</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Активные сессии</div>
+                <div class="fs-4 mt-2">@Format(Model.ActiveChatSessions)</div>
+                <div class="text-muted small mt-2">In-memory сессии чата</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">WasmGate</div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="fs-4">@Format(Model.WasmGateActiveConnections)</span>
+                    <span class="badge bg-@UpBadge(Model.WasmGateUp)">@UpText(Model.WasmGateUp)</span>
+                </div>
+                <div class="text-muted small mt-2">Активные соединения на edge</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Rate limit</div>
+                <div class="fs-4 mt-2">@Format(Model.WasmGateRateRejectedPerMinute, " / мин")</div>
+                <div class="text-muted small mt-2">Отклонено WasmGate</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small">Трафик edge</div>
+                <div class="fs-4 mt-2">@Format(Model.WasmGateRelayedBytesPerSecond, " B/s")</div>
+                <div class="text-muted small mt-2">Байт в секунду через WasmGate</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        setTimeout(() => window.location.reload(), 15000);
+    </script>
+}

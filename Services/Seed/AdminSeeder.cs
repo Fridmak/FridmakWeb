@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using TestingAppWeb.Data;
 using TestingAppWeb.Models;
 using TestingAppWeb.Options;
 
-namespace TestingAppWeb.Data
+namespace TestingAppWeb.Services.Seed
 {
     public static class AdminSeeder
     {

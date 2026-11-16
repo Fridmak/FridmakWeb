@@ -9,6 +9,7 @@ namespace TestingAppWeb.MiddleWare
         private readonly RequestDelegate _next;
         private readonly ILogger<IpFilterMiddleWare> _logger;
         private readonly HashSet<string> _blockedIps;
+        private readonly bool _enabled;
 
         public IpFilterMiddleWare(
             RequestDelegate next,
@@ -20,10 +21,17 @@ namespace TestingAppWeb.MiddleWare
             _blockedIps = new HashSet<string>(
                 options.Value.BlockedIps,
                 StringComparer.OrdinalIgnoreCase);
+            _enabled = options.Value.Enabled;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
+            if (!_enabled)
+            {
+                await _next.Invoke(context);
+                return;
+            }
+
             var remoteIp = context.Connection.RemoteIpAddress;
 
             if (remoteIp == null)

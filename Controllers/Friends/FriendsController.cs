@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using TestingAppWeb.Extensions;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.ViewModels;
-using TestingAppWeb.Services;
+using TestingAppWeb.Services.Friends;
 
-namespace TestingAppWeb.Controllers
+namespace TestingAppWeb.Controllers.Friends
 {
     [Authorize]
     public class FriendsController : Controller

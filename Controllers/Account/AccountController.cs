@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TestingAppWeb.Models;
-using TestingAppWeb.Services;
+using TestingAppWeb.Services.Users;
 
-namespace TestingAppWeb.Controllers
+namespace TestingAppWeb.Controllers.Account
 {
     public class AccountController : Controller
     {

@@ -10,6 +10,7 @@
 - Entity Framework Core 9 + PostgreSQL (Npgsql)
 - Cookie-аутентификация, BCrypt для паролей
 - Фоновый сервис (`BackgroundService`) для обработки сообщений
+- WasmGate (L4/TCP edge) + Prometheus + Grafana
 - Собственные middleware: rate limiting и IP-фильтр
 - HTML/CSS/JS, Razor
 
@@ -40,23 +41,38 @@
 ## Архитектура
 
 ```
-Controllers/        Account, Profile, Admin, Friends, Chat, Home, Error
-Models/             User, Friendship, Chat/ChatMessage, view models
-Data/               AppDbContext, AdminSeeder
-Services/           UserService, FriendshipService
-Services/Chat/      ChatService, ChatMessageProcessor, ChatSessionManager,
-                    ChatUserSession, ChatBackgroundService
-Services/Chat/Bots/ IChatBot, ChatBotManager, ChatBotHandler,
-                    CensorshipBot, HelpBot, MemeBot
-Options/            BotOptions, RateLimitOptions, IpFilterOptions, SeedOptions
-Extensions/         ClaimsPrincipalExtensions, DatabaseExtensions
-Middleware/         IpFilterMiddleware, RateLimitMiddleware
-Migrations/         миграции EF Core
+Controllers/
+  Account/    вход, регистрация, выход
+  Admin/      админка, боты, метрики
+  Chat/       чат
+  Error/      страницы ошибок
+  Friends/    друзья и заявки
+  Home/       главная, about, error
+  Profile/    профиль и редактирование
+
+Models/                User, Friendship, Chat/ChatMessage, ViewModels/
+Data/                  AppDbContext
+Services/
+  Users/               UserService
+  Friends/             FriendshipService
+  Seed/                AdminSeeder
+  Observability/       AppMetrics, PrometheusMetricsService
+  Chat/                ChatService, ChatMessageProcessor, ChatSessionManager,
+                       ChatUserSession, ChatBackgroundService
+  Chat/Bots/           IChatBot, ChatBotManager, ChatBotHandler,
+                       CensorshipBot, HelpBot, MemeBot
+
+Options/               BotOptions, RateLimitOptions, IpFilterOptions, SeedOptions,
+                       MetricsOptions, PrometheusOptions
+Extensions/            ClaimsPrincipalExtensions, DatabaseExtensions
+Middleware/            IpFilterMiddleware, RateLimitMiddleware
+deploy/                wasmgate/, observability/{prometheus,grafana}
+Migrations/            миграции EF Core
 ```
 
-Чат обрабатывается через `ChatHandler` и фоновый сервис: боты и пользователи
-получают сообщения через него. Состояние сообщений хранится в БД,
-поэтому история не теряется при перезапуске.
+Чат обрабатывается через `ChatService`, `ChatMessageProcessor` и `ChatSessionManager`:
+сообщения сохраняются в PostgreSQL, а боты получают их через `ChatUserSession`.
+История не теряется при перезапуске приложения.
 
 ## Как запустить
 
@@ -100,49 +116,96 @@ dotnet ef database update
 
 Нужен Docker Desktop с Linux-контейнерами.
 
-1. Создай `.env` из примера и задай свои пароли:
+Стек:
 
-```bash
-cp .env.example .env
+```text
+client
+  │
+  ▼
+WasmGate :8081            L4/TCP edge, rate limit, metrics :9099
+  │
+  ▼
+FridmakWeb :8080          MVC + /metrics (Bearer METRICS_TOKEN)
+  │
+  ├── PostgreSQL :5432
+  │
+  └── Prometheus :9090 ── Grafana :3000
 ```
 
-В PowerShell:
+1. Первый запуск. Скрипт создаст `.env` со случайными секретами и поднимет стек:
+
+```powershell
+./scripts/up.ps1
+```
+
+Либо вручную:
 
 ```powershell
 Copy-Item .env.example .env
-```
-
-2. Подними стек:
-
-```bash
+# отредактируй пароли в .env
 docker compose up --build -d
 ```
 
-3. Открой:
+2. Открой:
 
-- приложение — http://localhost:8081
-- PostgreSQL — `localhost:5434`, пользователь и пароль из `POSTGRES_USER` и `POSTGRES_PASSWORD`
-- админ — логин и пароль из `ADMIN_USERNAME` и `ADMIN_PASSWORD`
+| Что | Адрес |
+|---|---|
+| Приложение через WasmGate | http://localhost:8081 |
+| Приложение напрямую (debug) | http://localhost:8082 |
+| Grafana | http://localhost:3000 |
+| Prometheus | http://localhost:9091 |
+| WasmGate admin (`/healthz`, `/metrics`) | http://localhost:19099 |
+| PostgreSQL | localhost:5434 |
 
-Миграции применяются на старте. Если админа ещё нет, он создаётся автоматически.
-Порты `8081` и `5434` выбраны, чтобы не конфликтовать с Microservices (`8080` и `5433`).
+Логин админа — `ADMIN_USERNAME` / `ADMIN_PASSWORD` из `.env`.
+Grafana — `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` из `.env`.
 
-4. Полезные команды:
+3. Админка и метрики:
+
+- `http://localhost:8081/Admin` — управление ботами;
+- `http://localhost:8081/Admin/Metrics` — карточки из Prometheus и ссылка на Grafana.
+
+4. WasmGate:
+
+- используется ветка `metrics` (закреплён коммит `8aa95f56...`);
+- пересобрать с актуальной веткой:
+
+```powershell
+$env:WASMGATE_REF="metrics"
+docker compose build wasmgate
+docker compose up -d wasmgate
+```
+
+- admin-порт `19099` опубликован только на loopback и защищён `WASMGATE_ADMIN_TOKEN`;
+- edge rate limit настроен в `deploy/wasmgate/wasmgate.yaml`;
+- приложение за L4-прокси видит IP WasmGate, поэтому app-level `RateLimit` и
+  `IpFilter` в compose отключены (`RateLimit__Enabled=false`, `IpFilter__Enabled=false`).
+  Для прямого запуска без WasmGate они остаются включёнными.
+
+5. Метрики:
+
+- приложение отдаёт `/metrics` с `prometheus-net`: HTTP, чат, регистрации, сессии;
+- `/metrics` защищён `METRICS_TOKEN` и не должен быть публичным;
+- WasmGate отдаёт свои L4-метрики на `:9099/metrics` с `WASMGATE_ADMIN_TOKEN`;
+- Prometheus скрапит оба endpoint’а, Grafana поднимает готовый дашборд
+  `deploy/observability/grafana/dashboards/fridmakweb.json`.
+
+6. Полезные команды:
 
 ```bash
 docker compose ps
-docker compose logs -f app
+docker compose logs -f app wasmgate prometheus grafana
 docker compose down
-docker compose down -v   # вместе с базой
+docker compose down -v   # вместе с БД и метриками
 ```
 
 ## Дальнейшие шаги
 
 - Перевести чат на SignalR вместо polling — подробная инструкция в [`docs/signalr-migration.md`](docs/signalr-migration.md).
-- Добавить WasmGate, Prometheus и Grafana, страницу метрик в админке.
 - Добавить интеграционные тесты на контроллеры, middleware и права доступа.
 - Вынести rate limiter в Redis, чтобы лимит работал между репликами.
 - Опционально: ClickHouse для аналитики событий чата и админ-отчётов.
+- Опционально: WasmGate Control Plane для управления несколькими edge-нодами.
 
 ## Чему научился
 

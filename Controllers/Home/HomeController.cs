@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using TestingAppWeb.Models;
 
-namespace TestingAppWeb.Controllers
+namespace TestingAppWeb.Controllers.Home
 {
     public class HomeController : Controller
     {

@@ -1,17 +1,27 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using TestingAppWeb.Options;
 using TestingAppWeb.Services.Chat.Bots;
+using TestingAppWeb.Services.Observability;
 
-namespace TestingAppWeb.Controllers
+namespace TestingAppWeb.Controllers.Admin
 {
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly ChatBotManager _botManager;
+        private readonly IPrometheusMetricsService _metricsService;
+        private readonly PrometheusOptions _prometheusOptions;
 
-        public AdminController(ChatBotManager botManager)
+        public AdminController(
+            ChatBotManager botManager,
+            IPrometheusMetricsService metricsService,
+            IOptions<PrometheusOptions> prometheusOptions)
         {
             _botManager = botManager;
+            _metricsService = metricsService;
+            _prometheusOptions = prometheusOptions.Value;
         }
 
         [HttpGet]
@@ -19,6 +29,14 @@ namespace TestingAppWeb.Controllers
         {
             ViewBag.BotsManager = _botManager;
             return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Metrics()
+        {
+            var snapshot = await _metricsService.GetSnapshotAsync(HttpContext.RequestAborted);
+            ViewBag.GrafanaUrl = _prometheusOptions.GrafanaUrl;
+            return View(snapshot);
         }
 
         [HttpPost]
