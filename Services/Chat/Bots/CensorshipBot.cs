@@ -43,47 +43,47 @@ namespace TestingAppWeb.Services.Chat.Bots
             }
         }
 
-        public async Task<ChatBotHandle> HandleNewSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleNewSingleMessage(ChatMessageDto message)
         {
             if (string.IsNullOrWhiteSpace(message?.Text))
-                return _nullHandle;
+                return Task.FromResult(_nullHandle);
 
             var censoredText = CensorText(message.Text);
             if (censoredText != message.Text)
             {
-                return new ChatBotHandle(
+                return Task.FromResult(new ChatBotHandle(
                     MessageText: censoredText,
                     BotName: Name,
                     Action: MessageAction.Edit,
                     ToMessage: message
-                );
+                ));
             }
 
-            return _nullHandle;
+            return Task.FromResult(_nullHandle);
         }
 
-        public async Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message)
         {
             if (string.IsNullOrWhiteSpace(message?.Text))
-                return _nullHandle;
+                return Task.FromResult(_nullHandle);
 
             var censoredText = CensorText(message.Text);
             if (censoredText != message.Text)
             {
-                return new ChatBotHandle(
+                return Task.FromResult(new ChatBotHandle(
                     MessageText: censoredText,
                     BotName: Name,
                     Action: MessageAction.Edit,
                     ToMessage: message
-                );
+                ));
             }
 
-            return _nullHandle;
+            return Task.FromResult(_nullHandle);
         }
 
-        public async Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message)
         {
-            return _nullHandle;
+            return Task.FromResult(_nullHandle);
         }
 
         private string CensorText(string text)

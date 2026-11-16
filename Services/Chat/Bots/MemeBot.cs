@@ -67,39 +67,39 @@ namespace TestingAppWeb.Services.Chat.Bots
             return _nullHandle;
         }
 
-        public async Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message)
         {
-            if (!_isEnabled) return _nullHandle;
+            if (!_isEnabled) return Task.FromResult(_nullHandle);
 
             if (_random.Next(1, 100) <= 30)
             {
                 var upgraded = ApplyMemeStyle(message.Text) + " " + GetRandomEmoji();
-                return new ChatBotHandle(
+                return Task.FromResult(new ChatBotHandle(
                     MessageText: upgraded,
                     BotName: Name,
                     Action: MessageAction.Edit,
                     ToMessage: message
-                );
+                ));
             }
 
-            return _nullHandle;
+            return Task.FromResult(_nullHandle);
         }
 
-        public async Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message)
         {
-            if (!_isEnabled) return _nullHandle;
+            if (!_isEnabled) return Task.FromResult(_nullHandle);
 
             if (_random.Next(1, 100) <= 20)
             {
-                return new ChatBotHandle(
+                return Task.FromResult(new ChatBotHandle(
                     MessageText: $"🥲 Было слишком мемно... {GetRandomEmoji()}",
                     BotName: Name,
                     Action: MessageAction.Send,
                     ToMessage: message
-                );
+                ));
             }
 
-            return _nullHandle;
+            return Task.FromResult(_nullHandle);
         }
 
         private bool IsCommand(string text) => text.StartsWith("/");
@@ -182,11 +182,11 @@ namespace TestingAppWeb.Services.Chat.Bots
             return CreateResponse(result, message);
         }
 
-        private async Task<ChatBotHandle> HandleTriggerCommand(ChatMessageDto message, string fullText)
+        private Task<ChatBotHandle> HandleTriggerCommand(ChatMessageDto message, string fullText)
         {
             var parts = fullText.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length < 2)
-                return CreateResponse("Используй: `/trigger add слово` или `/trigger remove слово`", message);
+                return Task.FromResult(CreateResponse("Используй: `/trigger add слово` или `/trigger remove слово`", message));
 
             var action = parts[1].ToLower();
 
@@ -196,9 +196,9 @@ namespace TestingAppWeb.Services.Chat.Bots
                 if (_triggers.Add(word))
                 {
                     _logger.LogInformation("Добавлен триггер '{Trigger}' для MemeBot", word);
-                    return CreateResponse($"✅ Триггер '{word}' добавлен! Теперь я буду реагировать на него.", message);
+                    return Task.FromResult(CreateResponse($"✅ Триггер '{word}' добавлен! Теперь я буду реагировать на него.", message));
                 }
-                return CreateResponse($"⚠️ Триггер '{word}' уже существует.", message);
+                return Task.FromResult(CreateResponse($"⚠️ Триггер '{word}' уже существует.", message));
             }
 
             if (action == "remove" && parts.Length > 2)
@@ -207,12 +207,12 @@ namespace TestingAppWeb.Services.Chat.Bots
                 if (_triggers.Remove(word))
                 {
                     _logger.LogInformation("Удалён триггер '{Trigger}' для MemeBot", word);
-                    return CreateResponse($"🗑️ Триггер '{word}' удалён.", message);
+                    return Task.FromResult(CreateResponse($"🗑️ Триггер '{word}' удалён.", message));
                 }
-                return CreateResponse($"❌ Триггер '{word}' не найден.", message);
+                return Task.FromResult(CreateResponse($"❌ Триггер '{word}' не найден.", message));
             }
 
-            return CreateResponse("Неизвестное действие. Используй: `/trigger add` или `/trigger remove`", message);
+            return Task.FromResult(CreateResponse("Неизвестное действие. Используй: `/trigger add` или `/trigger remove`", message));
         }
 
         private ChatBotHandle UnknownCommand(ChatMessageDto message)

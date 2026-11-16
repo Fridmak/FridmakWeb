@@ -76,6 +76,9 @@ Migrations/            миграции EF Core
 
 ## Как запустить
 
+Открой `FridmakWeb.sln` (или `FridmakWeb.csproj`) в Rider / Visual Studio.
+Имя сборки оставлено `TestingAppWeb`, чтобы не ломать миграции и Docker entrypoint.
+
 1. Установи .NET 8 SDK и PostgreSQL (проще всего — через Docker Compose, см. ниже).
 
 2. Укажи строку подключения в `appsettings.json` или через переменную окружения:

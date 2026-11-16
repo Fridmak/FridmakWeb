@@ -64,9 +64,15 @@ else {
     }
 }
 
-docker compose up -d --build
-if ($LASTEXITCODE -ne 0) {
-    throw "docker compose failed with exit code $LASTEXITCODE"
+$compose = Start-Process `
+    -FilePath "docker" `
+    -ArgumentList @("compose", "up", "-d", "--build") `
+    -NoNewWindow `
+    -Wait `
+    -PassThru
+
+if ($compose.ExitCode -ne 0) {
+    throw "docker compose failed with exit code $($compose.ExitCode)"
 }
 
 function Read-EnvValue([string]$key) {

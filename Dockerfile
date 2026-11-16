@@ -1,11 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY TestingAppWeb.csproj ./
-RUN dotnet restore TestingAppWeb.csproj
+COPY FridmakWeb.csproj ./
+RUN dotnet restore FridmakWeb.csproj
 
 COPY . ./
-RUN dotnet publish TestingAppWeb.csproj -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish FridmakWeb.csproj -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app

@@ -10,17 +10,17 @@ namespace TestingAppWeb.Services.Chat.Bots
                 BotName: "HelpBot",
                 Action: MessageAction.None);
 
-        public async Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleDeleteSingleMessage(ChatMessageDto message)
         {
-            return _nullHandle;
+            return Task.FromResult(_nullHandle);
         }
 
-        public async Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleEditSingleMessage(ChatMessageDto message)
         {
-            return _nullHandle;
+            return Task.FromResult(_nullHandle);
         }
 
-        public async Task<ChatBotHandle> HandleNewSingleMessage(ChatMessageDto message)
+        public Task<ChatBotHandle> HandleNewSingleMessage(ChatMessageDto message)
         {
             var handle = new ChatBotHandle(
                 MessageText: $"{message.Text}: Viewed",
@@ -28,8 +28,7 @@ namespace TestingAppWeb.Services.Chat.Bots
                 Action: MessageAction.Edit,
                 ToMessage: message);
 
-
-            return handle;
+            return Task.FromResult(handle);
         }
     }
 }
