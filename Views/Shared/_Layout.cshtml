@@ -30,10 +30,10 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="FriendList">Друзья</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Friends" asp-action="Index">Друзья</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="AddFriend">Найти друзей</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Friends" asp-action="Search">Найти друзей</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Chat" asp-action="Index">Чат</a>
@@ -41,7 +41,7 @@
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="User" asp-action="AdminPanel">Админка</a>
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">Админка</a>
                                 </li>
                             }
                         }
@@ -52,8 +52,8 @@
                         <li class="nav-item">
                             <span class="nav-link text-dark">
                                 Здравствуйте, 
-                                <a asp-controller="User" 
-                                   asp-action="Profile" 
+                                <a asp-controller="Profile"
+                                   asp-action="Index"
                                    asp-route-userId="@User.FindFirst(ClaimTypes.NameIdentifier)?.Value"
                                    class = "text-dark text-decoration-none">
                                     @User.Identity.Name
@@ -61,16 +61,16 @@
                             </span>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="User" asp-action="Logout">Выйти</a>
+                            <a class="nav-link text-dark" asp-controller="Account" asp-action="Logout">Выйти</a>
                         </li>
                     }
                     else
                     {
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="User" asp-action="Login" asp-route-returnUrl="/Home/Index">Войти</a>
+                            <a class="nav-link text-dark" asp-controller="Account" asp-action="Login" asp-route-returnUrl="/Home/Index">Войти</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="User" asp-action="Register">Регистрация</a>
+                            <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Регистрация</a>
                         </li>
                     }
                 </div>

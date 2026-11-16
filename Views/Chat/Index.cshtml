@@ -11,7 +11,7 @@
 
 <h2>Чат</h2>
 
-@if (User.Identity.IsAuthenticated)
+@if (User.Identity?.IsAuthenticated == true)
 {
     @Html.AntiForgeryToken()
     <div class="chat-wrapper">
@@ -33,11 +33,11 @@
 else
 {
     <div class="alert alert-warning">
-        Для участия в чате необходимо <a asp-controller="User" asp-action="Login">войти</a>
+        Для участия в чате необходимо <a asp-controller="Account" asp-action="Login">войти</a>
     </div>
 }
 
 <script type="text/javascript">
     window.isAdmin = @((User.IsInRole("Admin")) ? "true" : "false");
-    window.userId = @((User.Identity.IsAuthenticated ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value : "null"));
+    window.userId = @((User.Identity?.IsAuthenticated == true ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "null" : "null"));
 </script>

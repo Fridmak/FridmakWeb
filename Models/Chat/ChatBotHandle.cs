@@ -1,9 +1,8 @@
 ﻿namespace TestingAppWeb.Models.Chat
 {
-    public record ChatBotHandle(
+    public sealed record ChatBotHandle(
         MessageAction Action,
-        string? messageText,
-        string? botName,
-        ChatMessageDto? toMessage = null
-    );
+        string? MessageText,
+        string? BotName,
+        ChatMessageDto? ToMessage = null);
 }

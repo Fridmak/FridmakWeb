@@ -7,7 +7,7 @@
 
 <h2>Найти пользователя</h2>
 
-<form asp-action="AddFriend" method="get" class="row g-2 mb-4">
+<form asp-action="Search" method="get" class="row g-2 mb-4">
     <div class="col">
         <input name="query"
                value="@Model.Query"
@@ -37,8 +37,8 @@
             <div class="card mb-2">
                 <div class="card-body d-flex justify-content-between align-items-start gap-3">
                     <div>
-                        <a asp-controller="User"
-                           asp-action="Profile"
+                        <a asp-controller="Profile"
+                           asp-action="Index"
                            asp-route-userId="@user.UserId"
                            class="fw-bold text-decoration-none">
                             @user.Username
@@ -53,8 +53,8 @@
                         @if (user.Status == FriendshipStatus.Accepted)
                         {
                             <span class="badge bg-success">Уже друзья</span>
-                            <a asp-controller="User"
-                               asp-action="Profile"
+                            <a asp-controller="Profile"
+                               asp-action="Index"
                                asp-route-userId="@user.UserId"
                                class="btn btn-outline-primary btn-sm">
                                 Профиль
@@ -63,11 +63,11 @@
                         else if (user.Status == FriendshipStatus.Pending && user.IsIncomingRequest)
                         {
                             <span class="badge bg-info text-dark">Входящая заявка</span>
-                            <form asp-action="AcceptFriendRequest" method="post">
+                            <form asp-action="AcceptRequest" method="post">
                                 <input type="hidden" name="id" value="@user.FriendshipId" />
                                 <button type="submit" class="btn btn-success btn-sm">Принять</button>
                             </form>
-                            <form asp-action="RejectFriendRequest" method="post">
+                            <form asp-action="RejectRequest" method="post">
                                 <input type="hidden" name="id" value="@user.FriendshipId" />
                                 <button type="submit" class="btn btn-outline-secondary btn-sm">Отклонить</button>
                             </form>
@@ -75,7 +75,7 @@
                         else if (user.Status == FriendshipStatus.Pending)
                         {
                             <span class="badge bg-warning text-dark">Заявка отправлена</span>
-                            <form asp-action="CancelFriendRequest" method="post">
+                            <form asp-action="CancelRequest" method="post">
                                 <input type="hidden" name="id" value="@user.FriendshipId" />
                                 <button type="submit" class="btn btn-outline-secondary btn-sm">Отменить</button>
                             </form>
@@ -86,7 +86,7 @@
                         }
                         else
                         {
-                            <form asp-action="SendFriendRequest" method="post">
+                            <form asp-action="SendRequest" method="post">
                                 <input type="hidden" name="userId" value="@user.UserId" />
                                 <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
                                 <button type="submit" class="btn btn-primary btn-sm">

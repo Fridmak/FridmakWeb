@@ -40,13 +40,16 @@
 ## Архитектура
 
 ```
-Controllers/        Home, User, Chat, Error
-Models/             User, Friendship, ChatMSG, view models
+Controllers/        Account, Profile, Admin, Friends, Chat, Home, Error
+Models/             User, Friendship, Chat/ChatMessage, view models
 Data/               AppDbContext, AdminSeeder
-Services/           UserService, FriendshipService, ChatService
-Services/Chat/      ChatServer, ChatHandler, ChatBackgroundService
-Bots/ChatBots/      ChatBotsManager, ChatBotHandler
-Services/Chat/Bots/ CensorshipBot, HelpBot, MemeBot
+Services/           UserService, FriendshipService
+Services/Chat/      ChatService, ChatMessageProcessor, ChatSessionManager,
+                    ChatUserSession, ChatBackgroundService
+Services/Chat/Bots/ IChatBot, ChatBotManager, ChatBotHandler,
+                    CensorshipBot, HelpBot, MemeBot
+Options/            BotOptions, RateLimitOptions, IpFilterOptions, SeedOptions
+Extensions/         ClaimsPrincipalExtensions, DatabaseExtensions
 Middleware/         IpFilterMiddleware, RateLimitMiddleware
 Migrations/         миграции EF Core
 ```

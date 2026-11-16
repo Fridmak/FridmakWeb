@@ -7,7 +7,7 @@ namespace TestingAppWeb.Models.ViewModels
         [Required(ErrorMessage = "Имя пользователя обязательно")]
         [StringLength(50, MinimumLength = 3, ErrorMessage = "От 3 до 50 символов")]
         [Display(Name = "Имя пользователя")]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
 
         [StringLength(500, ErrorMessage = "Описание не должно превышать 500 символов")]
         [Display(Name = "About")]

@@ -1,5 +1,4 @@
-﻿using TestingAppWeb.Interfaces;
-using TestingAppWeb.Models.Chat;
+﻿using TestingAppWeb.Models.Chat;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,13 +8,13 @@ namespace TestingAppWeb.Services.Chat.Bots
 {
     public class CensorshipBot : IChatBot
     {
-        public string NAME { get; } = "CensorshipBot";
+        public string Name { get; } = "CensorshipBot";
 
         private readonly HashSet<string> _badWords = new(StringComparer.OrdinalIgnoreCase);
 
         private readonly ChatBotHandle _nullHandle = new(
-            messageText: "NoneHandle",
-            botName: "CensorshipBot",
+            MessageText: "NoneHandle",
+            BotName: "CensorshipBot",
             Action: MessageAction.None);
 
         public CensorshipBot()
@@ -25,27 +24,22 @@ namespace TestingAppWeb.Services.Chat.Bots
 
         private void LoadBadWords()
         {
-            try
+            var filePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Resources",
+                "BannedChatWords.txt");
+
+            if (!File.Exists(filePath))
             {
-                string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "BannedChatWords.txt");
-
-                if (!File.Exists(filePath))
-                {
-                    throw new FileNotFoundException("Файл с запрещенными словами не найден.", filePath);
-                }
-
-                var words = File.ReadAllLines(filePath);
-                foreach (var word in words)
-                {
-                    if (!string.IsNullOrWhiteSpace(word))
-                    {
-                        _badWords.Add(word.Trim());
-                    }
-                }
+                throw new FileNotFoundException("Файл с запрещенными словами не найден.", filePath);
             }
-            catch (Exception ex)
+
+            foreach (var word in File.ReadAllLines(filePath))
             {
-                throw;
+                if (!string.IsNullOrWhiteSpace(word))
+                {
+                    _badWords.Add(word.Trim());
+                }
             }
         }
 
@@ -58,10 +52,10 @@ namespace TestingAppWeb.Services.Chat.Bots
             if (censoredText != message.Text)
             {
                 return new ChatBotHandle(
-                    messageText: censoredText,
-                    botName: NAME,
+                    MessageText: censoredText,
+                    BotName: Name,
                     Action: MessageAction.Edit,
-                    toMessage: message
+                    ToMessage: message
                 );
             }
 
@@ -77,10 +71,10 @@ namespace TestingAppWeb.Services.Chat.Bots
             if (censoredText != message.Text)
             {
                 return new ChatBotHandle(
-                    messageText: censoredText,
-                    botName: NAME,
+                    MessageText: censoredText,
+                    BotName: Name,
                     Action: MessageAction.Edit,
-                    toMessage: message
+                    ToMessage: message
                 );
             }
 

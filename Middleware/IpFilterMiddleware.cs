@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using Microsoft.Extensions.Options;
+using System.Net;
+using TestingAppWeb.Options;
 
 namespace TestingAppWeb.MiddleWare
 {
@@ -8,12 +10,16 @@ namespace TestingAppWeb.MiddleWare
         private readonly ILogger<IpFilterMiddleWare> _logger;
         private readonly HashSet<string> _blockedIps;
 
-        public IpFilterMiddleWare(RequestDelegate next, ILogger<IpFilterMiddleWare> logger, IConfiguration configuration)
+        public IpFilterMiddleWare(
+            RequestDelegate next,
+            ILogger<IpFilterMiddleWare> logger,
+            IOptions<IpFilterOptions> options)
         {
             _next = next;
             _logger = logger;
-            var blockedIps = configuration.GetSection("BlockedIps").Get<string[]>();
-            _blockedIps = new HashSet<string>(blockedIps ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            _blockedIps = new HashSet<string>(
+                options.Value.BlockedIps,
+                StringComparer.OrdinalIgnoreCase);
         }
 
         public async Task InvokeAsync(HttpContext context)

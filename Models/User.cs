@@ -7,16 +7,16 @@ namespace TestingAppWeb.Models
         [Key]
         public int Id { get; set; }
         [Required]
-        public string Username { get; set; }
+        public string Username { get; set; } = null!;
         [Required]
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = null!;
         [Required]
-        public string Email { get; set; }
+        public string Email { get; set; } = null!;
         [Required]
-        public string Role { get; set; }
+        public string Role { get; set; } = null!;
 
         [StringLength(500)]
         [Display(Name = "About")]
-        public string Bio { get; set; }
+        public string Bio { get; set; } = string.Empty;
     }
 }

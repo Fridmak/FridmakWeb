@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TestingAppWeb.Interfaces;
+using TestingAppWeb.Extensions;
 using TestingAppWeb.Models.Chat;
+using TestingAppWeb.Services.Chat;
 
 namespace TestingAppWeb.Controllers
 {
@@ -21,9 +22,12 @@ namespace TestingAppWeb.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var messagesWithActions = await GetMessagesAndActions(true);
-            var messages = messagesWithActions.Select(msg => msg.Item1).ToList();
-            return View(messages);
+            var messages = await _chatService.GetMessagesToUpdateAsync(
+                User.GetRequiredUserId(),
+                loadOld: true,
+                cancellationToken: HttpContext.RequestAborted);
+
+            return View(messages.Select(message => message.Item1).ToList());
         }
 
         [HttpPost]
@@ -34,7 +38,11 @@ namespace TestingAppWeb.Controllers
                 return BadRequest(new { success = false, error = "Invalid request" });
             }
 
-            var result = await _chatService.EditMessageAsync(request);
+            var result = await _chatService.EditMessageAsync(
+                User.GetRequiredUserId(),
+                User.IsInRole("Admin"),
+                request,
+                HttpContext.RequestAborted);
 
             return result switch
             {
@@ -65,7 +73,10 @@ namespace TestingAppWeb.Controllers
                     new { success = false, error = $"Message is too long (max {MaxMessageLength} characters)" });
             }
 
-            var success = await _chatService.SendMessageAsync(messageDto);
+            var success = await _chatService.SendMessageAsync(
+                User.GetRequiredUserId(),
+                messageDto,
+                HttpContext.RequestAborted);
 
             if (success)
             {
@@ -80,15 +91,16 @@ namespace TestingAppWeb.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMessages(bool loadOld = false)
         {
-            var messages = await GetMessagesAndActions(loadOld);
-            var formattedMessages = messages.Select(m => new object[] { m.Item1, m.Item2 }).ToList();
+            var messages = await _chatService.GetMessagesToUpdateAsync(
+                User.GetRequiredUserId(),
+                loadOld,
+                HttpContext.RequestAborted);
+
+            var formattedMessages = messages
+                .Select(message => new object[] { message.Item1, message.Item2 })
+                .ToList();
 
             return Ok(formattedMessages);
-        }
-
-        private async Task<List<(ChatMessageDto, MessageAction)>> GetMessagesAndActions(bool loadOld)
-        {
-            return await _chatService.GetMessagesToUpdateAsync(loadOld);
         }
     }
 }

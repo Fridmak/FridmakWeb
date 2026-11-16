@@ -23,7 +23,7 @@ namespace TestingAppWeb.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("TestingAppWeb.Models.Chat.ChatMSG", b =>
+            modelBuilder.Entity("TestingAppWeb.Models.Chat.ChatMessage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -125,7 +125,7 @@ namespace TestingAppWeb.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("TestingAppWeb.Models.Chat.ChatMSG", b =>
+            modelBuilder.Entity("TestingAppWeb.Models.Chat.ChatMessage", b =>
                 {
                     b.HasOne("TestingAppWeb.Models.User", "Sender")
                         .WithMany()

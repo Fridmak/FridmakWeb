@@ -29,7 +29,7 @@
                         </div>
                     }
 
-                    <form asp-action="EditProfile" method="post">
+                    <form asp-action="Edit" method="post">
                         <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
 
                         <div class="mb-3">
@@ -46,7 +46,7 @@
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
-                            <a href="@(ViewData["ReturnUrl"] ?? Url.Action("Profile", new { userId = ViewContext.RouteData.Values["id"] }))"
+                            <a href="@(ViewData["ReturnUrl"] ?? Url.Action("Index", "Profile", new { userId = ViewContext.RouteData.Values["id"] }))"
                                 class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left"></i> Отмена
                             </a>

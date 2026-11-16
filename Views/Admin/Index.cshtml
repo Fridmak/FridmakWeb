@@ -1,4 +1,4 @@
-﻿@using TestingAppWeb.Bots.ChatBots
+﻿@using TestingAppWeb.Services.Chat.Bots
 @{
     ViewData["Title"] = "Admin Panel";
 }
@@ -18,7 +18,7 @@
     </div>
 
     @{
-        var botsManager = ViewBag.BotsManager as ChatBotsManager;
+        var botsManager = ViewBag.BotsManager as ChatBotManager;
         var botNames = botsManager?.GetAllBots().ToList() ?? new List<string>();
     }
 
@@ -43,7 +43,7 @@
                     </div>
 
                     <div class="d-flex gap-2">
-                        <form asp-controller="User" asp-action="TurnBotOff" method="post">
+                        <form asp-controller="Admin" asp-action="TurnBotOff" method="post">
                             <input type="hidden" name="botName" value="@botName" />
                             <button type="submit"
                                     class="btn btn-outline-secondary @(isOn ? "" : "disabled")"
@@ -52,7 +52,7 @@
                             </button>
                         </form>
 
-                        <form asp-controller="User" asp-action="TurnBotOn" method="post">
+                        <form asp-controller="Admin" asp-action="TurnBotOn" method="post">
                             <input type="hidden" name="botName" value="@botName" />
                             <button type="submit"
                                     class="btn btn-outline-primary @(isOn ? "disabled" : "")"

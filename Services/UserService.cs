@@ -1,67 +1,168 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using TestingAppWeb.Bots.ChatBots;
 using TestingAppWeb.Data;
-using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 
 namespace TestingAppWeb.Services
 {
+    public interface IUserService
+    {
+        Task<User?> GetUserByUsernameAsync(
+            string username,
+            CancellationToken cancellationToken = default);
+
+        Task<User?> GetUserByMailAsync(
+            string email,
+            CancellationToken cancellationToken = default);
+
+        Task<User?> GetUserById(
+            string id,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> RegisterUserAsync(
+            RegisterViewModel model,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> RegisterUserAsync(
+            string userName,
+            string email,
+            string password,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> EditProfile(
+            string id,
+            string userName,
+            string bio,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> SetRoleAsync(
+            int userId,
+            string role,
+            CancellationToken cancellationToken = default);
+
+        string GetPasswordHash(string password);
+
+        bool VerifyPassword(string password, string passwordHash);
+
+        Task LogoutAsync(string userName);
+    }
+
     public class UserService : IUserService
     {
         private readonly AppDbContext _context;
-        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(
-            AppDbContext context,
-            ILogger<UserService> logger,
-            IServiceProvider serviceProvider)
+        public UserService(AppDbContext context, ILogger<UserService> logger)
         {
             _context = context;
             _logger = logger;
-            _serviceProvider = serviceProvider;
         }
 
-        public async Task<User> GetUserByUsernameAsync(string username)
+        public async Task<User?> GetUserByUsernameAsync(
+            string username,
+            CancellationToken cancellationToken = default)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            return await _context.Users
+                .FirstOrDefaultAsync(user => user.Username == username, cancellationToken);
         }
 
-        public async Task<bool> RegisterUserAsync(RegisterViewModel model)
+        public async Task<User?> GetUserByMailAsync(
+            string email,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(user => user.Email == email, cancellationToken);
+        }
+
+        public async Task<User?> GetUserById(
+            string id,
+            CancellationToken cancellationToken = default)
+        {
+            if (!int.TryParse(id, out var userId))
+            {
+                return null;
+            }
+
+            return await _context.Users
+                .FirstOrDefaultAsync(user => user.Id == userId, cancellationToken);
+        }
+
+        public async Task<bool> RegisterUserAsync(
+            RegisterViewModel model,
+            CancellationToken cancellationToken = default)
         {
             var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == model.Username || u.Email == model.Email);
+                .FirstOrDefaultAsync(
+                    user => user.Username == model.Username || user.Email == model.Email,
+                    cancellationToken);
 
             if (existingUser != null)
             {
                 return false;
             }
 
-            var user = new User
+            _context.Users.Add(new User
             {
                 Username = model.Username,
                 Email = model.Email,
                 PasswordHash = GetPasswordHash(model.Password),
                 Role = "User",
-                Bio = ""
-            };
+                Bio = string.Empty
+            });
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
+            await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
 
-        public async Task<bool> RegisterUserAsync(string userName, string email, string password)
+        public async Task<bool> RegisterUserAsync(
+            string userName,
+            string email,
+            string password,
+            CancellationToken cancellationToken = default)
         {
-            var model = new RegisterViewModel{
-                Username = userName,
-                Email = email,
-                Password = password
-            };
-            return await RegisterUserAsync(model);
+            return await RegisterUserAsync(
+                new RegisterViewModel
+                {
+                    Username = userName,
+                    Email = email,
+                    Password = password
+                },
+                cancellationToken);
+        }
+
+        public async Task<bool> EditProfile(
+            string id,
+            string userName,
+            string bio,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await GetUserById(id, cancellationToken);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Username = userName;
+            user.Bio = bio;
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+
+        public async Task<bool> SetRoleAsync(
+            int userId,
+            string role,
+            CancellationToken cancellationToken = default)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(candidate => candidate.Id == userId, cancellationToken);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Role = role;
+            await _context.SaveChangesAsync(cancellationToken);
+            return true;
         }
 
         public string GetPasswordHash(string password)
@@ -76,56 +177,8 @@ namespace TestingAppWeb.Services
 
         public Task LogoutAsync(string userName)
         {
-            _logger.Log(LogLevel.Information, $"user {userName} logged out");
+            _logger.LogInformation("User {UserName} logged out.", userName);
             return Task.CompletedTask;
-        }
-
-        public async Task<bool> SetRoleAsync(int userId, string role)
-        {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                return false;
-            }
-
-            user.Role = role;
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public Task<ChatBotsManager> GetBotsManager()
-        {
-            return Task.FromResult(_serviceProvider.GetRequiredService<ChatBotsManager>());
-        }
-
-        public async Task<bool> EditProfile(string id, string userName, string bio)
-        {
-            var user = await GetUserById(id);
-
-            if (user == null)
-            {
-                return false;
-            }
-
-            user.Username = userName;
-            user.Bio = bio;
-
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
-
-        public async Task<User> GetUserById(string id)
-        {
-            if (!int.TryParse(id, out int userIdValue))
-                return null;
-
-            return await _context.Users.FirstOrDefaultAsync(user => user.Id == userIdValue);
-        }
-
-        public async Task<User> GetUserByMailAsync(string email)
-        {
-            return await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
         }
     }
 }

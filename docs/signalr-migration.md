@@ -1,8 +1,8 @@
 # Перевод чата FridmakWeb на SignalR
 
 Это пошаговая инструкция для самостоятельной реализации. Она написана под текущий код проекта:
-`ChatController` + polling каждые 500 мс, `ChatHandler`/`ChatHandlerManager`, `ChatServer`,
-`ChatBackgroundService` и боты в `Bots/ChatBots`.
+`ChatController` + polling каждые 500 мс, `ChatUserSession`/`ChatSessionManager`, `ChatMessageProcessor`,
+`ChatBackgroundService` и боты в `Services/Chat/Bots`.
 
 Цель: сохранить сообщения в PostgreSQL **до** отправки клиентам, убрать polling,
 оставить ботов и получить нормальный real-time чат.
@@ -35,7 +35,7 @@ git switch -c feat/signalr-chat
 
 ## 1. Сервис сообщений
 
-Сейчас логика размазана между `ChatService`, `ChatServer`, `ChatHandler` и контроллером.
+Сейчас логика размазана между `ChatService`, `ChatMessageProcessor`, `ChatUserSession` и контроллером.
 Для SignalR нужен один сервис, который:
 
 - проверяет авторизацию и владельца;
@@ -106,7 +106,7 @@ public sealed class ChatMessageService : IChatMessageService
             return new ChatOperationResult(ChatOperationStatus.Forbidden);
         }
 
-        var message = new ChatMSG
+        var message = new ChatMessage
         {
             SenderId = userId,
             MessageText = text,
@@ -438,8 +438,8 @@ curl -i http://localhost:8081/hubs/chat/negotiate?negotiateVersion=1
 
 ## 4. Боты: очередь вместо polling
 
-Сейчас `ChatBackgroundService` каждые 500 мс дергает `ChatServer`, а тот читает
-`ConcurrentStack` из `ChatHandler`. Для SignalR это лишнее.
+Сейчас `ChatBackgroundService` каждые 500 мс дергает `ChatMessageProcessor`, а тот читает
+`ConcurrentQueue` из `ChatUserSession`. Для SignalR это лишнее.
 
 Рекомендуемая схема:
 
@@ -467,7 +467,7 @@ ChatBotBackgroundService
 ```csharp
 using System.Threading.Channels;
 
-public sealed record ChatEvent(ChatMSG Message, MessageAction Action);
+public sealed record ChatEvent(ChatMessage Message, MessageAction Action);
 
 public sealed class ChatEventQueue
 {
@@ -511,7 +511,7 @@ await _events.EnqueueAsync(new ChatEvent(message, MessageAction.Send));
 
 ### 4.2. Фоновый сервис ботов
 
-Не переписывай `ChatBotHandler` целиком. У него уже есть `AcceptNewMessage` и
+Не переписывай `ChatBotHandler` целиком. У него уже есть `AcceptNewMessageAsync` и
 `TryDequeueOutgoingTask`. Достаточно нового фонового сервиса:
 
 ```csharp
@@ -564,17 +564,17 @@ public sealed class ChatBotBackgroundService : BackgroundService
     {
         using var scope = _scopeFactory.CreateScope();
 
-        var botsManager = scope.ServiceProvider.GetRequiredService<ChatBotsManager>();
+        var botManager = scope.ServiceProvider.GetRequiredService<ChatBotManager>();
         var messages = scope.ServiceProvider.GetRequiredService<IChatMessageService>();
 
-        foreach (var botName in botsManager.GetAllBots())
+        foreach (var botName in botManager.GetAllBots())
         {
-            if (!botsManager.TryGetChatBot(botName, out var bot) || !bot.IsWorking)
+            if (!botManager.TryGetChatBot(botName, out var bot) || !bot.IsWorking)
             {
                 continue;
             }
 
-            await bot.AcceptNewMessage((chatEvent.Message, chatEvent.Action));
+            await bot.AcceptNewMessageAsync((chatEvent.Message, chatEvent.Action));
 
             while (bot.TryDequeueOutgoingTask(out var botTask))
             {
@@ -584,7 +584,7 @@ public sealed class ChatBotBackgroundService : BackgroundService
     }
 
     private async Task PersistAndBroadcastBotTaskAsync(
-        (ChatMSG Message, MessageAction Action) botTask,
+        (ChatMessage Message, MessageAction Action) botTask,
         IChatMessageService messages,
         CancellationToken cancellationToken)
     {
@@ -795,7 +795,7 @@ addEditToContainer(chatContainer, connection);
 
 ## 6. Аудит сообщений и миграция
 
-Рекомендую добавить в `ChatMSG`:
+Рекомендую добавить в `ChatMessage`:
 
 ```csharp
 public DateTimeOffset? EditedAt { get; set; }
@@ -806,10 +806,10 @@ public bool IsDeleted { get; set; }
 И индексы в `AppDbContext.OnModelCreating`:
 
 ```csharp
-modelBuilder.Entity<ChatMSG>()
+modelBuilder.Entity<ChatMessage>()
     .HasIndex(message => message.SentAt);
 
-modelBuilder.Entity<ChatMSG>()
+modelBuilder.Entity<ChatMessage>()
     .HasIndex(message => new { message.SenderId, message.SentAt });
 ```
 
@@ -903,9 +903,9 @@ if (builder.Configuration.GetValue("Features:SignalR", false))
 5. Убедись, что неделю нет ошибок.
 6. Удали:
 
-- `ChatHandler` и `ChatHandlerManager`;
+- `ChatUserSession` и `ChatSessionManager`;
 - `ChatBackgroundService`;
-- пользовательские очереди из `ChatServer`;
+- пользовательские очереди из `ChatMessageProcessor`;
 - `ChatController.GetMessages`, `SendMessage`, `EditMessage`;
 - polling-функции из `wwwroot/js/chat/api.js`;
 - `setInterval` из `wwwroot/js/chat/main.js`.

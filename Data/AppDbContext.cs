@@ -7,7 +7,7 @@ namespace TestingAppWeb.Data
     public class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
-        public DbSet<ChatMSG> ChatMessages { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
@@ -28,16 +28,16 @@ namespace TestingAppWeb.Data
                 entity.HasIndex(user => user.Email).IsUnique();
             });
 
-            modelBuilder.Entity<ChatMSG>()
+            modelBuilder.Entity<ChatMessage>()
                 .HasOne(message => message.Sender)
                 .WithMany()
                 .HasForeignKey(message => message.SenderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<ChatMSG>()
+            modelBuilder.Entity<ChatMessage>()
                 .HasIndex(message => message.SentAt);
 
-            modelBuilder.Entity<ChatMSG>()
+            modelBuilder.Entity<ChatMessage>()
                 .HasIndex(message => new { message.SenderId, message.SentAt });
 
             modelBuilder.Entity<Friendship>(entity =>

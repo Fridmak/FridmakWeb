@@ -1,98 +1,59 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using TestingAppWeb.Data;
-using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models.Chat;
 
 namespace TestingAppWeb.Services.Chat
 {
+    public interface IChatService
+    {
+        Task<List<(ChatMessageDto, MessageAction)>> GetMessagesToUpdateAsync(
+            int userId,
+            bool loadOld = false,
+            CancellationToken cancellationToken = default);
+
+        Task<MessageEditResult> EditMessageAsync(
+            int userId,
+            bool isAdmin,
+            EditMessageRequest request,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> SendMessageAsync(
+            int userId,
+            ChatMessageDto messageDto,
+            CancellationToken cancellationToken = default);
+    }
+
     public class ChatService : IChatService
     {
         private const int MaxMessageLength = 2000;
+        private const int HistoryLimit = 500;
 
         private readonly AppDbContext _context;
         private readonly ILogger<ChatService> _logger;
-        private readonly int _messagesToShow = 500;
-        private readonly ChatHandlerManager _chatHandlerManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ChatSessionManager _sessionManager;
 
-        public ChatService(AppDbContext context, ILogger<ChatService> logger, ChatHandlerManager handlerManager, IHttpContextAccessor accessor)
+        public ChatService(
+            AppDbContext context,
+            ILogger<ChatService> logger,
+            ChatSessionManager sessionManager)
         {
             _context = context;
             _logger = logger;
-            _chatHandlerManager = handlerManager;
-            _httpContextAccessor = accessor;
+            _sessionManager = sessionManager;
         }
 
-        private int GetCurrentUserId()
-        {
-            var httpContext = _httpContextAccessor.HttpContext;
-            if (httpContext == null)
-                throw new InvalidOperationException("HTTP-контекст недоступен. Вызовите метод в контексте HTTP-запроса.");
-
-            var user = httpContext.User;
-            if (user.Identity?.IsAuthenticated != true)
-                throw new InvalidOperationException("Пользователь не авторизован.");
-
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
-                throw new InvalidOperationException("Claim 'NameIdentifier' не найден или пуст.");
-
-            if (!int.TryParse(userIdClaim, out int userId))
-                throw new InvalidCastException($"Не удалось преобразовать Id пользователя '{userIdClaim}' в число.");
-
-            return userId;
-        }
-
-        private bool IsCurrentUserAdmin()
-        {
-            return _httpContextAccessor.HttpContext?.User?.IsInRole("Admin") == true;
-        }
-
-        public async Task<List<(ChatMessageDto, MessageAction)>> GetRecentMessagesAsync()
-        {
-            try
-            {
-                var messages = await _context.ChatMessages
-                    .AsNoTracking()
-                    .Where(m => !string.IsNullOrEmpty(m.MessageText) &&
-                                m.SentAt != default &&
-                                !string.IsNullOrEmpty(m.Sender.Username))
-                    .OrderByDescending(m => m.SentAt)
-                    .Take(_messagesToShow)
-                    .Select(m => new ChatMessageDto
-                    {
-                        Text = m.MessageText,
-                        Timestamp = m.SentAt,
-                        UserName = m.Sender.Username,
-                        MessageId = m.Id
-                    })
-                    .ToListAsync();
-
-                // Запрос берёт последние сообщения, а интерфейсу нужен хронологический порядок.
-                messages.Reverse();
-
-                return messages
-                    .Select(m => (m, MessageAction.Send))
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving recent messages.");
-                return new List<(ChatMessageDto, MessageAction)>();
-            }
-        }
-
-        public async Task<List<(ChatMessageDto, MessageAction)>> GetMessagesToUpdateAsync(bool loadOld = false)
+        public async Task<List<(ChatMessageDto, MessageAction)>> GetMessagesToUpdateAsync(
+            int userId,
+            bool loadOld = false,
+            CancellationToken cancellationToken = default)
         {
             if (loadOld)
             {
-                return await GetRecentMessagesAsync();
+                return await GetRecentMessagesAsync(cancellationToken);
             }
 
-            var userId = GetCurrentUserId();
-            var handler = _chatHandlerManager.GetOrCreateHandler(userId);
-            var updates = handler.GetMessagesToUpdate().ToList();
+            var session = _sessionManager.GetOrCreateSession(userId);
+            var updates = session.DequeueIncomingUpdates().ToList();
 
             if (updates.Count == 0)
             {
@@ -100,129 +61,166 @@ namespace TestingAppWeb.Services.Chat
             }
 
             var senderIds = updates
-                .Select(m => m.Message.SenderId)
+                .Select(update => update.Message.SenderId)
                 .Distinct()
                 .ToList();
 
             var usernames = await _context.Users
                 .AsNoTracking()
-                .Where(u => senderIds.Contains(u.Id))
-                .Select(u => new { u.Id, u.Username })
-                .ToDictionaryAsync(u => u.Id, u => u.Username);
+                .Where(user => senderIds.Contains(user.Id))
+                .Select(user => new { user.Id, user.Username })
+                .ToDictionaryAsync(
+                    user => user.Id,
+                    user => user.Username,
+                    cancellationToken);
 
-            var res = updates
-                .Select(m => (
+            return updates
+                .Select(update => (
                     new ChatMessageDto
                     {
-                        MessageId = m.Message.Id,
-                        Text = m.Message.MessageText,
-                        UserName = usernames.TryGetValue(m.Message.SenderId, out var username)
+                        MessageId = update.Message.Id,
+                        Text = update.Message.MessageText,
+                        UserName = usernames.TryGetValue(update.Message.SenderId, out var username)
                             ? username
                             : "unknown",
-                        Timestamp = m.Message.SentAt
+                        Timestamp = update.Message.SentAt
                     },
-                    m.Action
+                    update.Action
                 ))
-                .OrderBy(m => m.Item1.Timestamp)
+                .OrderBy(update => update.Item1.Timestamp)
                 .ToList();
-
-            return res;
         }
 
-        public async Task<MessageEditResult> EditMessageAsync(EditMessageRequest request)
+        public async Task<MessageEditResult> EditMessageAsync(
+            int userId,
+            bool isAdmin,
+            EditMessageRequest request,
+            CancellationToken cancellationToken = default)
         {
-            var currentUserId = GetCurrentUserId();
-            var isAdmin = IsCurrentUserAdmin();
-
-            var msg = await _context.ChatMessages
+            var message = await _context.ChatMessages
                 .AsNoTracking()
-                .FirstOrDefaultAsync(m => m.Id == request.Id);
+                .FirstOrDefaultAsync(item => item.Id == request.Id, cancellationToken);
 
-            if (msg == null)
+            if (message == null)
             {
                 return MessageEditResult.NotFound;
             }
 
-            if (msg.SenderId != currentUserId && !isAdmin)
+            if (message.SenderId != userId && !isAdmin)
             {
                 _logger.LogWarning(
                     "User {UserId} attempted to edit message {MessageId} owned by {OwnerId}.",
-                    currentUserId,
+                    userId,
                     request.Id,
-                    msg.SenderId);
+                    message.SenderId);
                 return MessageEditResult.Forbidden;
             }
 
             if (!request.Delete)
             {
-                if (string.IsNullOrWhiteSpace(request.Message) || request.Message.Length > MaxMessageLength)
+                if (string.IsNullOrWhiteSpace(request.Message) ||
+                    request.Message.Length > MaxMessageLength)
                 {
                     return MessageEditResult.Invalid;
                 }
             }
 
-            var messageForQueue = new ChatMSG
+            var messageForQueue = new ChatMessage
             {
-                Id = msg.Id,
-                SenderId = msg.SenderId,
-                MessageText = request.Delete ? msg.MessageText : request.Message.Trim(),
-                SentAt = msg.SentAt
+                Id = message.Id,
+                SenderId = message.SenderId,
+                MessageText = request.Delete ? message.MessageText : request.Message.Trim(),
+                SentAt = message.SentAt
             };
 
-            var action = request.Delete
-                ? Tuple.Create(messageForQueue, MessageAction.Delete)
-                : Tuple.Create(messageForQueue, MessageAction.Edit);
+            var action = request.Delete ? MessageAction.Delete : MessageAction.Edit;
 
             try
             {
-                var messageHandler = _chatHandlerManager.GetOrCreateHandler(currentUserId);
-                messageHandler.AddMessage(action);
+                var session = _sessionManager.GetOrCreateSession(userId);
+                session.EnqueueOutgoing((messageForQueue, action));
                 return MessageEditResult.Success;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error editing message with ID={Id}", request.Id);
+                _logger.LogError(ex, "Error editing message with ID={Id}.", request.Id);
                 return MessageEditResult.Failed;
             }
         }
 
-        public async Task<bool> SendMessageAsync(ChatMessageDto messageDto)
+        public async Task<bool> SendMessageAsync(
+            int userId,
+            ChatMessageDto messageDto,
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(messageDto.Text) || messageDto.Text.Length > MaxMessageLength)
+            if (string.IsNullOrWhiteSpace(messageDto.Text) ||
+                messageDto.Text.Length > MaxMessageLength)
             {
                 return false;
             }
 
-            var senderId = GetCurrentUserId();
-
             var senderExists = await _context.Users
                 .AsNoTracking()
-                .AnyAsync(u => u.Id == senderId);
+                .AnyAsync(user => user.Id == userId, cancellationToken);
 
             if (!senderExists)
             {
                 return false;
             }
 
-            var msg = new ChatMSG
+            var message = new ChatMessage
             {
                 SentAt = DateTimeOffset.UtcNow,
-                SenderId = senderId,
+                SenderId = userId,
                 MessageText = messageDto.Text.Trim()
             };
 
-            var action = Tuple.Create(msg, MessageAction.Send);
-
             try
             {
-                var messageHandler = _chatHandlerManager.GetOrCreateHandler(senderId);
-                messageHandler.AddMessage(action);
+                var session = _sessionManager.GetOrCreateSession(userId);
+                session.EnqueueOutgoing((message, MessageAction.Send));
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending message from user {UserId}", senderId);
+                _logger.LogError(ex, "Error sending message from user {UserId}.", userId);
                 return false;
+            }
+        }
+
+        private async Task<List<(ChatMessageDto, MessageAction)>> GetRecentMessagesAsync(
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var messages = await _context.ChatMessages
+                    .AsNoTracking()
+                    .Where(message =>
+                        !string.IsNullOrEmpty(message.MessageText) &&
+                        message.SentAt != default &&
+                        !string.IsNullOrEmpty(message.Sender.Username))
+                    .OrderByDescending(message => message.SentAt)
+                    .Take(HistoryLimit)
+                    .Select(message => new ChatMessageDto
+                    {
+                        Text = message.MessageText,
+                        Timestamp = message.SentAt,
+                        UserName = message.Sender.Username,
+                        MessageId = message.Id
+                    })
+                    .ToListAsync(cancellationToken);
+
+                // Запрос берёт последние сообщения, а интерфейсу нужен хронологический порядок.
+                messages.Reverse();
+
+                return messages
+                    .Select(message => (message, MessageAction.Send))
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving recent messages.");
+                return new List<(ChatMessageDto, MessageAction)>();
             }
         }
     }

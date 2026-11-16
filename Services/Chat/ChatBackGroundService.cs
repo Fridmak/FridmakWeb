@@ -1,41 +1,46 @@
-﻿public class ChatBackgroundService : BackgroundService
+﻿namespace TestingAppWeb.Services.Chat
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public ChatBackgroundService(IServiceProvider serviceProvider)
+    public class ChatBackgroundService : BackgroundService
     {
-        _serviceProvider = serviceProvider;
-    }
+        private static readonly TimeSpan ProcessingInterval = TimeSpan.FromMilliseconds(500);
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
+        private readonly ChatMessageProcessor _processor;
+        private readonly ILogger<ChatBackgroundService> _logger;
+
+        public ChatBackgroundService(
+            ChatMessageProcessor processor,
+            ILogger<ChatBackgroundService> logger)
         {
-            using var scope = _serviceProvider.CreateScope();
-            var chatServer = scope.ServiceProvider.GetRequiredService<ChatServer>();
+            _processor = processor;
+            _logger = logger;
+        }
 
-            try
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
             {
-                await chatServer.SetupBots();
-                await chatServer.ProcessAllPendingMessages();
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                var logger = scope.ServiceProvider.GetRequiredService<ILogger<ChatBackgroundService>>();
-                logger.LogError(ex, "Error in ChatBackgroundService");
-            }
+                try
+                {
+                    await _processor.SetupBotsAsync(stoppingToken);
+                    await _processor.ProcessPendingMessagesAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Chat background processing failed.");
+                }
 
-            try
-            {
-                await Task.Delay(500, stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
+                try
+                {
+                    await Task.Delay(ProcessingInterval, stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
         }
     }

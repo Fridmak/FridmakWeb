@@ -1,4 +1,7 @@
-﻿namespace TestingAppWeb.Middleware
+﻿using Microsoft.Extensions.Options;
+using TestingAppWeb.Options;
+
+namespace TestingAppWeb.Middleware
 {
     public class RateLimitMiddleware
     {
@@ -9,12 +12,15 @@
         private readonly int _limit;
         private readonly TimeSpan _interval;
 
-        public RateLimitMiddleware(ILogger<RateLimitMiddleware> logger, RequestDelegate next, IConfiguration configuration)
+        public RateLimitMiddleware(
+            ILogger<RateLimitMiddleware> logger,
+            RequestDelegate next,
+            IOptions<RateLimitOptions> options)
         {
             _logger = logger;
             _next = next;
-            _limit = configuration.GetValue("RateLimit:Limit", 1000);
-            _interval = TimeSpan.FromSeconds(configuration.GetValue("RateLimit:WindowSeconds", 60));
+            _limit = options.Value.Limit;
+            _interval = TimeSpan.FromSeconds(options.Value.WindowSeconds);
         }
 
         public async Task InvokeAsync(HttpContext context)

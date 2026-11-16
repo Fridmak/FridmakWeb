@@ -1,11 +1,65 @@
 using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
-using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.ViewModels;
 
 namespace TestingAppWeb.Services
 {
+    public interface IFriendshipService
+    {
+        Task<FriendRequestResult> SendRequestAsync(
+            int requesterId,
+            int addresseeId,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> AcceptRequestAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> RejectRequestAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> CancelRequestAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default);
+
+        Task<bool> RemoveFriendAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<FriendListItem>> GetFriendsAsync(
+            int userId,
+            CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<FriendRequestItem>> GetIncomingRequestsAsync(
+            int userId,
+            CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<FriendRequestItem>> GetOutgoingRequestsAsync(
+            int userId,
+            CancellationToken cancellationToken = default);
+
+        Task<FriendshipInfo?> GetFriendshipAsync(
+            int userId,
+            int otherUserId,
+            CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<UserSearchResult>> SearchUsersAsync(
+            int currentUserId,
+            string query,
+            int take = 20,
+            CancellationToken cancellationToken = default);
+
+        Task<int> GetFriendCountAsync(
+            int userId,
+            CancellationToken cancellationToken = default);
+    }
+
     public class FriendshipService : IFriendshipService
     {
         private readonly AppDbContext _context;
@@ -17,7 +71,10 @@ namespace TestingAppWeb.Services
             _logger = logger;
         }
 
-        public async Task<FriendRequestResult> SendRequestAsync(int requesterId, int addresseeId)
+        public async Task<FriendRequestResult> SendRequestAsync(
+            int requesterId,
+            int addresseeId,
+            CancellationToken cancellationToken = default)
         {
             if (requesterId == addresseeId)
             {
@@ -26,21 +83,18 @@ namespace TestingAppWeb.Services
 
             var requesterExists = await _context.Users
                 .AsNoTracking()
-                .AnyAsync(user => user.Id == requesterId);
+                .AnyAsync(user => user.Id == requesterId, cancellationToken);
 
             var addressee = await _context.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(user => user.Id == addresseeId);
+                .FirstOrDefaultAsync(user => user.Id == addresseeId, cancellationToken);
 
             if (!requesterExists || addressee == null || addressee.Role == "Bot")
             {
                 return FriendRequestResult.UserNotFound;
             }
 
-            var existing = await _context.Friendships
-                .FirstOrDefaultAsync(friendship =>
-                    (friendship.RequesterId == requesterId && friendship.AddresseeId == addresseeId) ||
-                    (friendship.RequesterId == addresseeId && friendship.AddresseeId == requesterId));
+            var existing = await FindBetweenAsync(requesterId, addresseeId, cancellationToken);
 
             if (existing != null)
             {
@@ -61,7 +115,7 @@ namespace TestingAppWeb.Services
                         existing.Status = FriendshipStatus.Pending;
                         existing.CreatedAt = DateTimeOffset.UtcNow;
                         existing.RespondedAt = null;
-                        await _context.SaveChangesAsync();
+                        await _context.SaveChangesAsync(cancellationToken);
                         return FriendRequestResult.Success;
                 }
             }
@@ -76,24 +130,32 @@ namespace TestingAppWeb.Services
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(cancellationToken);
                 return FriendRequestResult.Success;
             }
             catch (DbUpdateException ex)
             {
                 // Уникальный индекс (RequesterId, AddresseeId) защищает от гонки.
-                _logger.LogWarning(ex, "Duplicate friend request from {RequesterId} to {AddresseeId}.", requesterId, addresseeId);
+                _logger.LogWarning(
+                    ex,
+                    "Duplicate friend request from {RequesterId} to {AddresseeId}.",
+                    requesterId,
+                    addresseeId);
                 return FriendRequestResult.AlreadyPending;
             }
         }
 
-        public async Task<bool> AcceptRequestAsync(int friendshipId, int currentUserId)
+        public async Task<bool> AcceptRequestAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default)
         {
             var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(friendship =>
-                    friendship.Id == friendshipId &&
-                    friendship.AddresseeId == currentUserId &&
-                    friendship.Status == FriendshipStatus.Pending);
+                .FirstOrDefaultAsync(
+                    item => item.Id == friendshipId &&
+                            item.AddresseeId == currentUserId &&
+                            item.Status == FriendshipStatus.Pending,
+                    cancellationToken);
 
             if (friendship == null)
             {
@@ -102,17 +164,21 @@ namespace TestingAppWeb.Services
 
             friendship.Status = FriendshipStatus.Accepted;
             friendship.RespondedAt = DateTimeOffset.UtcNow;
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
 
-        public async Task<bool> RejectRequestAsync(int friendshipId, int currentUserId)
+        public async Task<bool> RejectRequestAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default)
         {
             var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(friendship =>
-                    friendship.Id == friendshipId &&
-                    friendship.AddresseeId == currentUserId &&
-                    friendship.Status == FriendshipStatus.Pending);
+                .FirstOrDefaultAsync(
+                    item => item.Id == friendshipId &&
+                            item.AddresseeId == currentUserId &&
+                            item.Status == FriendshipStatus.Pending,
+                    cancellationToken);
 
             if (friendship == null)
             {
@@ -121,17 +187,21 @@ namespace TestingAppWeb.Services
 
             friendship.Status = FriendshipStatus.Rejected;
             friendship.RespondedAt = DateTimeOffset.UtcNow;
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
 
-        public async Task<bool> CancelRequestAsync(int friendshipId, int currentUserId)
+        public async Task<bool> CancelRequestAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default)
         {
             var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(friendship =>
-                    friendship.Id == friendshipId &&
-                    friendship.RequesterId == currentUserId &&
-                    friendship.Status == FriendshipStatus.Pending);
+                .FirstOrDefaultAsync(
+                    item => item.Id == friendshipId &&
+                            item.RequesterId == currentUserId &&
+                            item.Status == FriendshipStatus.Pending,
+                    cancellationToken);
 
             if (friendship == null)
             {
@@ -139,17 +209,21 @@ namespace TestingAppWeb.Services
             }
 
             _context.Friendships.Remove(friendship);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
 
-        public async Task<bool> RemoveFriendAsync(int friendshipId, int currentUserId)
+        public async Task<bool> RemoveFriendAsync(
+            int friendshipId,
+            int currentUserId,
+            CancellationToken cancellationToken = default)
         {
             var friendship = await _context.Friendships
-                .FirstOrDefaultAsync(friendship =>
-                    friendship.Id == friendshipId &&
-                    friendship.Status == FriendshipStatus.Accepted &&
-                    (friendship.RequesterId == currentUserId || friendship.AddresseeId == currentUserId));
+                .FirstOrDefaultAsync(
+                    item => item.Id == friendshipId &&
+                            item.Status == FriendshipStatus.Accepted &&
+                            (item.RequesterId == currentUserId || item.AddresseeId == currentUserId),
+                    cancellationToken);
 
             if (friendship == null)
             {
@@ -157,11 +231,13 @@ namespace TestingAppWeb.Services
             }
 
             _context.Friendships.Remove(friendship);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
             return true;
         }
 
-        public async Task<IReadOnlyList<FriendListItem>> GetFriendsAsync(int userId)
+        public async Task<IReadOnlyList<FriendListItem>> GetFriendsAsync(
+            int userId,
+            CancellationToken cancellationToken = default)
         {
             var friendships = await _context.Friendships
                 .AsNoTracking()
@@ -170,7 +246,7 @@ namespace TestingAppWeb.Services
                 .Where(friendship =>
                     friendship.Status == FriendshipStatus.Accepted &&
                     (friendship.RequesterId == userId || friendship.AddresseeId == userId))
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return friendships
                 .Select(friendship =>
@@ -192,7 +268,9 @@ namespace TestingAppWeb.Services
                 .ToList();
         }
 
-        public async Task<IReadOnlyList<FriendRequestItem>> GetIncomingRequestsAsync(int userId)
+        public async Task<IReadOnlyList<FriendRequestItem>> GetIncomingRequestsAsync(
+            int userId,
+            CancellationToken cancellationToken = default)
         {
             var requests = await _context.Friendships
                 .AsNoTracking()
@@ -201,7 +279,7 @@ namespace TestingAppWeb.Services
                     friendship.AddresseeId == userId &&
                     friendship.Status == FriendshipStatus.Pending)
                 .OrderByDescending(friendship => friendship.CreatedAt)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return requests
                 .Select(friendship => new FriendRequestItem
@@ -215,7 +293,9 @@ namespace TestingAppWeb.Services
                 .ToList();
         }
 
-        public async Task<IReadOnlyList<FriendRequestItem>> GetOutgoingRequestsAsync(int userId)
+        public async Task<IReadOnlyList<FriendRequestItem>> GetOutgoingRequestsAsync(
+            int userId,
+            CancellationToken cancellationToken = default)
         {
             var requests = await _context.Friendships
                 .AsNoTracking()
@@ -224,7 +304,7 @@ namespace TestingAppWeb.Services
                     friendship.RequesterId == userId &&
                     friendship.Status == FriendshipStatus.Pending)
                 .OrderByDescending(friendship => friendship.CreatedAt)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return requests
                 .Select(friendship => new FriendRequestItem
@@ -238,14 +318,12 @@ namespace TestingAppWeb.Services
                 .ToList();
         }
 
-        public async Task<FriendshipInfo?> GetFriendshipAsync(int userId, int otherUserId)
+        public async Task<FriendshipInfo?> GetFriendshipAsync(
+            int userId,
+            int otherUserId,
+            CancellationToken cancellationToken = default)
         {
-            var friendship = await _context.Friendships
-                .AsNoTracking()
-                .FirstOrDefaultAsync(friendship =>
-                    (friendship.RequesterId == userId && friendship.AddresseeId == otherUserId) ||
-                    (friendship.RequesterId == otherUserId && friendship.AddresseeId == userId));
-
+            var friendship = await FindBetweenAsync(userId, otherUserId, cancellationToken, asNoTracking: true);
             if (friendship == null)
             {
                 return null;
@@ -262,7 +340,8 @@ namespace TestingAppWeb.Services
         public async Task<IReadOnlyList<UserSearchResult>> SearchUsersAsync(
             int currentUserId,
             string query,
-            int take = 20)
+            int take = 20,
+            CancellationToken cancellationToken = default)
         {
             query = query?.Trim() ?? string.Empty;
             if (query.Length < 2)
@@ -287,7 +366,7 @@ namespace TestingAppWeb.Services
                     user.Username,
                     user.Bio
                 })
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             if (users.Count == 0)
             {
@@ -301,7 +380,7 @@ namespace TestingAppWeb.Services
                 .Where(friendship =>
                     (friendship.RequesterId == currentUserId && userIds.Contains(friendship.AddresseeId)) ||
                     (friendship.AddresseeId == currentUserId && userIds.Contains(friendship.RequesterId)))
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return users
                 .Select(user =>
@@ -322,13 +401,37 @@ namespace TestingAppWeb.Services
                 .ToList();
         }
 
-        public async Task<int> GetFriendCountAsync(int userId)
+        public async Task<int> GetFriendCountAsync(
+            int userId,
+            CancellationToken cancellationToken = default)
         {
             return await _context.Friendships
                 .AsNoTracking()
-                .CountAsync(friendship =>
-                    friendship.Status == FriendshipStatus.Accepted &&
-                    (friendship.RequesterId == userId || friendship.AddresseeId == userId));
+                .CountAsync(
+                    friendship =>
+                        friendship.Status == FriendshipStatus.Accepted &&
+                        (friendship.RequesterId == userId || friendship.AddresseeId == userId),
+                    cancellationToken);
+        }
+
+        private async Task<Friendship?> FindBetweenAsync(
+            int firstUserId,
+            int secondUserId,
+            CancellationToken cancellationToken,
+            bool asNoTracking = false)
+        {
+            var query = _context.Friendships.AsQueryable();
+
+            if (asNoTracking)
+            {
+                query = query.AsNoTracking();
+            }
+
+            return await query.FirstOrDefaultAsync(
+                friendship =>
+                    (friendship.RequesterId == firstUserId && friendship.AddresseeId == secondUserId) ||
+                    (friendship.RequesterId == secondUserId && friendship.AddresseeId == firstUserId),
+                cancellationToken);
         }
     }
 }

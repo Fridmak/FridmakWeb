@@ -1,16 +1,15 @@
 ﻿using Microsoft.Extensions.Logging;
-using TestingAppWeb.Interfaces;
 using TestingAppWeb.Models.Chat;
 
 namespace TestingAppWeb.Services.Chat.Bots
 {
     public class MemeBot : IChatBot
     {
-        public string NAME { get; } = "MemeBot";
+        public string Name { get; } = "MemeBot";
 
         private static readonly ChatBotHandle _nullHandle = new(
-            messageText: null,
-            botName: "MemeBot",
+            MessageText: null,
+            BotName: "MemeBot",
             Action: MessageAction.None
         );
 
@@ -44,10 +43,10 @@ namespace TestingAppWeb.Services.Chat.Bots
             {
                 var response = ApplyMemeStyle(text) + " " + GetRandomEmoji();
                 return new ChatBotHandle(
-                    messageText: response,
-                    botName: NAME,
+                    MessageText: response,
+                    BotName: Name,
                     Action: MessageAction.Send,
-                    toMessage: message
+                    ToMessage: message
                 );
             }
 
@@ -58,10 +57,10 @@ namespace TestingAppWeb.Services.Chat.Bots
                     maybeFunny += " " + GetRandomEmoji();
 
                 return new ChatBotHandle(
-                    messageText: maybeFunny,
-                    botName: NAME,
+                    MessageText: maybeFunny,
+                    BotName: Name,
                     Action: MessageAction.Edit,
-                    toMessage: message
+                    ToMessage: message
                 );
             }
 
@@ -76,10 +75,10 @@ namespace TestingAppWeb.Services.Chat.Bots
             {
                 var upgraded = ApplyMemeStyle(message.Text) + " " + GetRandomEmoji();
                 return new ChatBotHandle(
-                    messageText: upgraded,
-                    botName: NAME,
+                    MessageText: upgraded,
+                    BotName: Name,
                     Action: MessageAction.Edit,
-                    toMessage: message
+                    ToMessage: message
                 );
             }
 
@@ -93,10 +92,10 @@ namespace TestingAppWeb.Services.Chat.Bots
             if (_random.Next(1, 100) <= 20)
             {
                 return new ChatBotHandle(
-                    messageText: $"🥲 Было слишком мемно... {GetRandomEmoji()}",
-                    botName: NAME,
+                    MessageText: $"🥲 Было слишком мемно... {GetRandomEmoji()}",
+                    BotName: Name,
                     Action: MessageAction.Send,
-                    toMessage: message
+                    ToMessage: message
                 );
             }
 
@@ -147,7 +146,7 @@ namespace TestingAppWeb.Services.Chat.Bots
             var status = _isEnabled ? "🟢 ВКЛЮЧЁН" : "🔴 ВЫКЛЮЧЕН";
             var count = _triggers.Count;
             return CreateResponse(
-                $"🤖 **{NAME}**\n" +
+                $"🤖 **{Name}**\n" +
                 $"Состояние: {status}\n" +
                 $"Триггеров: {count}\n" +
                 $"Режим: ${(message.Text.Contains("грустно") ? "спасение от депрессии" : "хаос и мемы")}",
@@ -225,10 +224,10 @@ namespace TestingAppWeb.Services.Chat.Bots
         }
 
         private ChatBotHandle CreateResponse(string text, ChatMessageDto replyTo) => new(
-            messageText: text,
-            botName: NAME,
+            MessageText: text,
+            BotName: Name,
             Action: MessageAction.Send,
-            toMessage: replyTo
+            ToMessage: replyTo
         );
 
         private string ApplyMemeStyle(string input)

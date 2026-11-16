@@ -1,17 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Models;
+using TestingAppWeb.Options;
 
 namespace TestingAppWeb.Data
 {
     public static class AdminSeeder
     {
-        public static async Task SeedAsync(IServiceProvider services, IConfiguration configuration)
+        public static async Task SeedAsync(
+            IServiceProvider services,
+            SeedOptions options,
+            CancellationToken cancellationToken = default)
         {
-            var username = configuration["Seed:AdminUsername"];
-            var password = configuration["Seed:AdminPassword"];
-            var email = configuration["Seed:AdminEmail"] ?? "admin@example.com";
-
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(options.AdminUsername) ||
+                string.IsNullOrWhiteSpace(options.AdminPassword))
             {
                 return;
             }
@@ -23,22 +24,24 @@ namespace TestingAppWeb.Data
                 .CreateLogger("AdminSeeder");
 
             var existingUser = await db.Users
-                .FirstOrDefaultAsync(user => user.Username == username);
+                .FirstOrDefaultAsync(
+                    user => user.Username == options.AdminUsername,
+                    cancellationToken);
 
             if (existingUser != null)
             {
                 if (existingUser.Role != "Admin")
                 {
                     logger.LogWarning(
-                        "User '{Username}' already exists but has role '{Role}'. Admin seed skipped.",
-                        username,
+                        "User {Username} already exists but has role {Role}. Admin seed skipped.",
+                        options.AdminUsername,
                         existingUser.Role);
                 }
 
                 return;
             }
 
-            if (await db.Users.AnyAsync(user => user.Role == "Admin"))
+            if (await db.Users.AnyAsync(user => user.Role == "Admin", cancellationToken))
             {
                 logger.LogInformation("An admin user already exists. Admin seed skipped.");
                 return;
@@ -46,15 +49,15 @@ namespace TestingAppWeb.Data
 
             db.Users.Add(new User
             {
-                Username = username,
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                Username = options.AdminUsername,
+                Email = options.AdminEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(options.AdminPassword),
                 Role = "Admin",
-                Bio = ""
+                Bio = string.Empty
             });
 
-            await db.SaveChangesAsync();
-            logger.LogInformation("Admin user '{Username}' created.", username);
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Admin user {Username} created.", options.AdminUsername);
         }
     }
 }
