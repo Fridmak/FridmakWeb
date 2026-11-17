@@ -1,14 +1,59 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Главная";
 }
 
-<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/text.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/button.css" asp-append-version="true" />
+<section class="hero mb-4">
+    <h1>FridmakWeb</h1>
+    <p class="lead mt-3 mb-4">
+        Социальный чат на ASP.NET Core MVC: профили, друзья, сообщения, боты
+        и наблюдаемый edge через WasmGate, Prometheus и Grafana.
+    </p>
 
-<div class="hero">
-    <div>
-        <h1>Welcome to Fridmak's website!!</h1>
-        <a asp-controller="Friends" asp-action="Search" class="btn-custom">Найти друзей</a>
+    <div class="d-flex flex-wrap gap-2">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-controller="Chat" asp-action="Index" class="btn btn-light px-4">Открыть чат</a>
+            <a asp-controller="Friends" asp-action="Index" class="btn btn-outline-light px-4">Мои друзья</a>
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="Login" class="btn btn-light px-4">Войти</a>
+            <a asp-controller="Account" asp-action="Register" class="btn btn-outline-light px-4">Регистрация</a>
+        }
+    </div>
+</section>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="feature-card">
+            <h3>Чат</h3>
+            <p>Общая комната, история сообщений, редактирование и удаление своих сообщений.</p>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Chat" asp-action="Index" class="btn btn-sm btn-outline-primary mt-3">Перейти</a>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="feature-card">
+            <h3>Друзья</h3>
+            <p>Поиск пользователей, заявки, принятие и удаление из друзей — без глобальных списков.</p>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Friends" asp-action="Search" class="btn btn-sm btn-outline-primary mt-3">Найти людей</a>
+            }
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="feature-card">
+            <h3>Наблюдаемость</h3>
+            <p>WasmGate на edge, метрики приложения и edge в Prometheus, готовый дашборд в Grafana.</p>
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-controller="Admin" asp-action="Metrics" class="btn btn-sm btn-outline-primary mt-3">Метрики</a>
+            }
+        </div>
     </div>
 </div>

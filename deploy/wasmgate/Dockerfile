@@ -22,12 +22,18 @@ RUN CGO_ENABLED=0 go build -trimpath \
 
 FROM alpine:3.22
 
-RUN apk add --no-cache ca-certificates curl \
-    && adduser -D -u 10001 wasmgate
+RUN apk add --no-cache ca-certificates curl jq \
+    && adduser -D -u 10001 wasmgate \
+    && mkdir -p /data \
+    && chown -R wasmgate:wasmgate /data
 
 COPY --from=build /out/wasmgate /usr/local/bin/wasmgate
 COPY deploy/wasmgate/wasmgate.yaml /etc/wasmgate/wasmgate.yaml
+COPY deploy/wasmgate/entrypoint.sh /usr/local/bin/wasmgate-entrypoint.sh
+
+RUN chmod 0755 /usr/local/bin/wasmgate-entrypoint.sh
 
 USER wasmgate
+VOLUME ["/data"]
 EXPOSE 8080 9099
-ENTRYPOINT ["/usr/local/bin/wasmgate", "-config", "/etc/wasmgate/wasmgate.yaml"]
+ENTRYPOINT ["/usr/local/bin/wasmgate-entrypoint.sh"]

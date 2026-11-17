@@ -52,6 +52,81 @@ services:
       retries: 12
       start_period: 30s
 
+  wasmgate-cp-db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wasmgate
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: wasmgate
+    volumes:
+      - wasmgate-cp-db-data:/var/lib/postgresql/data
+      - ./deploy/wasmgate-cp/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wasmgate -d wasmgate"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  cert-init:
+    image: alpine/openssl:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mkdir -p /certs
+        if [ ! -f /certs/server.crt ] || [ ! -f /certs/release-signing.key ]; then
+          openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes \
+            -keyout /certs/server.key \
+            -out /certs/server.crt \
+            -subj "/CN=wasmgate-cp" \
+            -addext "subjectAltName=DNS:wasmgate-cp,DNS:control-plane,DNS:localhost,IP:127.0.0.1"
+          openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 \
+            -out /certs/release-signing.key
+          openssl pkey -in /certs/release-signing.key \
+            -pubout -out /certs/release-signing.key.pub
+        fi
+        chown -R 1654:1654 /certs
+        chmod 600 /certs/server.key /certs/release-signing.key
+        chmod 644 /certs/server.crt /certs/release-signing.key.pub
+    volumes:
+      - wasmgate-certs:/certs
+
+  wasmgate-cp:
+    build:
+      context: .
+      dockerfile: deploy/wasmgate-cp/Dockerfile
+      args:
+        WASMGATE_REF: ${WASMGATE_REF:-8aa95f56f9a3a2c67cf079f23abcc5ed695d3238}
+    restart: unless-stopped
+    environment:
+      WASMGATE_CP_POSTGRES: "Host=wasmgate-cp-db;Port=5432;Database=wasmgate;Username=wasmgate;Password=${POSTGRES_PASSWORD}"
+      WASMGATE_CP_AGENT_CA_CERT: /data/ca/agents-ca.crt
+      WASMGATE_CP_AGENT_CA_KEY: /data/ca/agents-ca.key
+      WASMGATE_CP_SIGNING_KEY: /certs/release-signing.key
+      WASMGATE_CP_GRPC_LISTEN: https://0.0.0.0:9096
+      WASMGATE_CP_GRPC_TLS_CERT: /certs/server.crt
+      WASMGATE_CP_GRPC_TLS_KEY: /certs/server.key
+      WASMGATE_CP_GRPC_CLIENT_CA: /data/ca/agents-ca.crt
+      WASMGATE_CP_HTTP_LISTEN: http://0.0.0.0:9097
+      WASMGATE_CP_ARTIFACT_ROOT: /data/artifacts
+      WASMGATE_CP_WASMGATE_BIN: /app/wasmgate
+      WASMGATE_CP_ADMIN_TOKEN: ${WASMGATE_CP_ADMIN_TOKEN:?set WASMGATE_CP_ADMIN_TOKEN in .env}
+    volumes:
+      - wasmgate-cp-data:/data
+      - wasmgate-certs:/certs:ro
+    depends_on:
+      wasmgate-cp-db:
+        condition: service_healthy
+      cert-init:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:19097:9097"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9097/readyz >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
   wasmgate:
     build:
       context: .
@@ -63,8 +138,21 @@ services:
     depends_on:
       app:
         condition: service_healthy
+      cert-init:
+        condition: service_completed_successfully
+      wasmgate-cp:
+        condition: service_healthy
     environment:
       WASMGATE_ADMIN_TOKEN: ${WASMGATE_ADMIN_TOKEN:?set WASMGATE_ADMIN_TOKEN in .env}
+      WASMGATE_CP_URL: https://wasmgate-cp:9096
+      WASMGATE_CP_ADMIN_URL: http://wasmgate-cp:9097
+      WASMGATE_CP_ADMIN_TOKEN: ${WASMGATE_CP_ADMIN_TOKEN:?set WASMGATE_CP_ADMIN_TOKEN in .env}
+      WASMGATE_AGENT_NAME: edge-01
+      WASMGATE_AGENT_PREFIX: edge-
+      WASMGATE_AGENT_ENV: prod
+    volumes:
+      - wasmgate-certs:/certs:ro
+      - wasmgate-state:/data
     ports:
       - "8081:8080"
       - "127.0.0.1:19099:9099"
@@ -82,10 +170,13 @@ services:
         condition: service_healthy
       wasmgate:
         condition: service_healthy
+      wasmgate-cp:
+        condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         printf '%s' "$$WASMGATE_ADMIN_TOKEN" > /tmp/wasmgate-admin-token
+        printf '%s' "$$WASMGATE_CP_ADMIN_TOKEN" > /tmp/wasmgate-cp-admin-token
         printf '%s' "$$APP_METRICS_TOKEN" > /tmp/app-metrics-token
         exec /bin/prometheus \
           --config.file=/etc/prometheus/prometheus.yml \
@@ -94,6 +185,7 @@ services:
           --web.listen-address=0.0.0.0:9090
     environment:
       WASMGATE_ADMIN_TOKEN: ${WASMGATE_ADMIN_TOKEN:?set WASMGATE_ADMIN_TOKEN in .env}
+      WASMGATE_CP_ADMIN_TOKEN: ${WASMGATE_CP_ADMIN_TOKEN:?set WASMGATE_CP_ADMIN_TOKEN in .env}
       APP_METRICS_TOKEN: ${METRICS_TOKEN:?set METRICS_TOKEN in .env}
     volumes:
       - ./deploy/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -122,5 +214,9 @@ services:
 volumes:
   postgres-data:
   dataprotection-keys:
+  wasmgate-cp-db-data:
+  wasmgate-cp-data:
+  wasmgate-certs:
+  wasmgate-state:
   prometheus-data:
   grafana-data:

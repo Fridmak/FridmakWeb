@@ -5,7 +5,13 @@
     ViewData["Title"] = "Поиск друзей";
 }
 
-<h2>Найти пользователя</h2>
+<div class="page-header">
+    <div>
+        <h1>Поиск друзей</h1>
+        <p class="page-subtitle">Найди пользователя по имени или email и отправь заявку.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">К друзьям</a>
+</div>
 
 <form asp-action="Search" method="get" class="row g-2 mb-4">
     <div class="col">

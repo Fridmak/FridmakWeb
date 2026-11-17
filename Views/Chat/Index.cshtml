@@ -1,6 +1,6 @@
 ﻿@using TestingAppWeb.Models.Chat
 @{
-    ViewData["Title"] = "Chat";
+    ViewData["Title"] = "Чат";
 }
 
 <link rel="stylesheet" href="~/css/chat/button.css" asp-append-version="true" />
@@ -9,7 +9,12 @@
 <link rel="stylesheet" href="~/css/chat/message.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/chat/modal.css" asp-append-version="true" />
 
-<h2>Чат</h2>
+<div class="page-header">
+    <div>
+        <h1>Чат</h1>
+        <p class="page-subtitle">Общая комната. Сообщения сохраняются в PostgreSQL, боты отвечают автоматически.</p>
+    </div>
+</div>
 
 @if (User.Identity?.IsAuthenticated == true)
 {

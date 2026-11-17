@@ -1,6 +1,6 @@
 ﻿@using TestingAppWeb.Services.Chat.Bots
 @{
-    ViewData["Title"] = "Admin Panel";
+    ViewData["Title"] = "Админка";
 }
 
 <link rel="stylesheet" href="~/css/form.css" asp-append-version="true" />
@@ -8,15 +8,18 @@
 
 <div class="card-list-container">
 
-    <div class="text-center">
-        <h1 class="display-4">Admin Panel</h1>
-        <p class="text-muted">Управление чат-ботами. Друзья теперь управляются пользователями.</p>
-        <a asp-action="Metrics" class="btn btn-primary">Метрики и Grafana</a>
+    <div class="page-header">
+        <div>
+            <h1>Админка</h1>
+            <p class="page-subtitle">Управление чат-ботами и переход к наблюдаемости.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Metrics" class="btn btn-primary">Метрики</a>
+            <a href="http://localhost:19097" target="_blank" rel="noopener" class="btn btn-outline-primary">WasmGate CP</a>
+        </div>
     </div>
 
-    <div class="text-center" style="margin-top: 30px;">
-        <h2 class="display-6">Bot Management</h2>
-    </div>
+    <h2 class="h4 mb-3">Чат-боты</h2>
 
     @{
         var botsManager = ViewBag.BotsManager as ChatBotManager;

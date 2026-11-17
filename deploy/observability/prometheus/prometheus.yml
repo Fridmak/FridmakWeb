@@ -18,3 +18,11 @@ scrape_configs:
       credentials_file: /tmp/wasmgate-admin-token
     static_configs:
       - targets: ["wasmgate:9099"]
+
+  - job_name: wasmgate-control-plane
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /tmp/wasmgate-cp-admin-token
+    static_configs:
+      - targets: ["wasmgate-cp:9097"]

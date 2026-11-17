@@ -24,6 +24,7 @@ $values = [ordered]@{
     ADMIN_EMAIL              = 'admin@example.com'
     ADMIN_PASSWORD           = New-Secret
     WASMGATE_ADMIN_TOKEN     = New-Secret
+    WASMGATE_CP_ADMIN_TOKEN  = New-Secret
     METRICS_TOKEN            = New-Secret
     GRAFANA_ADMIN_USER       = 'admin'
     GRAFANA_ADMIN_PASSWORD   = New-Secret
@@ -80,6 +81,7 @@ function Read-EnvValue([string]$key) {
 }
 
 $wasmGateToken = Read-EnvValue 'WASMGATE_ADMIN_TOKEN'
+$wasmGateCpToken = Read-EnvValue 'WASMGATE_CP_ADMIN_TOKEN'
 $metricsToken = Read-EnvValue 'METRICS_TOKEN'
 $grafanaUser = Read-EnvValue 'GRAFANA_ADMIN_USER'
 $grafanaPassword = Read-EnvValue 'GRAFANA_ADMIN_PASSWORD'
@@ -90,8 +92,10 @@ Write-Host '  Application (WasmGate) : http://localhost:8081'
 Write-Host '  Application (direct)   : http://localhost:8082'
 Write-Host '  Grafana                : http://localhost:3000'
 Write-Host '  Prometheus             : http://localhost:9091'
+Write-Host '  WasmGate CP UI/API     : http://localhost:19097'
 Write-Host '  WasmGate admin         : http://localhost:19099'
 Write-Host '  PostgreSQL             : localhost:5434'
 Write-Host "  Grafana login          : $grafanaUser / $grafanaPassword"
+Write-Host "  WasmGate CP token      : $wasmGateCpToken"
 Write-Host "  WasmGate admin token   : $wasmGateToken"
 Write-Host "  App metrics token      : $metricsToken"

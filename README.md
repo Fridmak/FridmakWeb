@@ -10,7 +10,7 @@
 - Entity Framework Core 9 + PostgreSQL (Npgsql)
 - Cookie-аутентификация, BCrypt для паролей
 - Фоновый сервис (`BackgroundService`) для обработки сообщений
-- WasmGate (L4/TCP edge) + Prometheus + Grafana
+- WasmGate (L4/TCP edge + Control Plane) + Prometheus + Grafana
 - Собственные middleware: rate limiting и IP-фильтр
 - HTML/CSS/JS, Razor
 
@@ -133,6 +133,10 @@ FridmakWeb :8080          MVC + /metrics (Bearer METRICS_TOKEN)
   ├── PostgreSQL :5432
   │
   └── Prometheus :9090 ── Grafana :3000
+
+WasmGate Control Plane :19097
+  └── wasmgate-cp-db (PostgreSQL 17)
+      └── manages edge-01 and its config
 ```
 
 1. Первый запуск. Скрипт создаст `.env` со случайными секретами и поднимет стек:
@@ -157,6 +161,7 @@ docker compose up --build -d
 | Приложение напрямую (debug) | http://localhost:8082 |
 | Grafana | http://localhost:3000 |
 | Prometheus | http://localhost:9091 |
+| WasmGate Control Plane UI/API | http://localhost:19097 |
 | WasmGate admin (`/healthz`, `/metrics`) | http://localhost:19099 |
 | PostgreSQL | localhost:5434 |
 
@@ -167,16 +172,19 @@ Grafana — `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` из `.env`.
 
 - `http://localhost:8081/Admin` — управление ботами;
 - `http://localhost:8081/Admin/Metrics` — карточки из Prometheus и ссылка на Grafana.
+- `http://localhost:19097` — WasmGate Control Plane, токен `WASMGATE_CP_ADMIN_TOKEN` из `.env`.
 
 4. WasmGate:
 
-- используется ветка `metrics` (закреплён коммит `8aa95f56...`);
-- пересобрать с актуальной веткой:
+- используется ветка `metrics` (закреплён коммит `8aa95f56...`) и для data plane, и для Control Plane;
+- data plane `edge-01` автоматически enroll'ится в CP при первом старте;
+- CP UI/API: `http://localhost:19097`, токен `WASMGATE_CP_ADMIN_TOKEN`;
+- пересобрать оба компонента с актуальной веткой:
 
 ```powershell
 $env:WASMGATE_REF="metrics"
-docker compose build wasmgate
-docker compose up -d wasmgate
+docker compose build wasmgate wasmgate-cp
+docker compose up -d wasmgate wasmgate-cp
 ```
 
 - admin-порт `19099` опубликован только на loopback и защищён `WASMGATE_ADMIN_TOKEN`;
@@ -200,6 +208,42 @@ docker compose ps
 docker compose logs -f app wasmgate prometheus grafana
 docker compose down
 docker compose down -v   # вместе с БД и метриками
+```
+
+## Как назначить себя админом
+
+1. Самый простой путь — войти под seeded-админом:
+
+```text
+логин:  ADMIN_USERNAME
+пароль: ADMIN_PASSWORD
+```
+
+Оба значения лежат в `.env`. Если админ ещё не создан, приложение создаст его при старте.
+
+2. Если ты уже зарегистрирован как обычный пользователь, повысь роль:
+
+```powershell
+./scripts/promote-admin.ps1 -Username твой_логин
+```
+
+Скрипт обновляет `Role` в PostgreSQL. После этого **выйди и войди заново**:
+роль хранится в cookie-claims, и без повторного логина старый claim останется.
+
+3. Вручную через `psql`:
+
+```powershell
+docker compose exec db psql -U fridmak -d fridmakweb
+```
+
+```sql
+UPDATE "Users" SET "Role" = 'Admin' WHERE "Username" = 'твой_логин';
+```
+
+Проверить:
+
+```sql
+SELECT "Id", "Username", "Role" FROM "Users" WHERE "Username" = 'твой_логин';
 ```
 
 ## Дальнейшие шаги
