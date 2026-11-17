@@ -9,7 +9,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] — FridmakWeb</title>
+    <title>@ViewData["Title"] — Fridmak</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
@@ -20,7 +20,7 @@
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-controller="Home" asp-action="Index">FridmakWeb</a>
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">Fridmak</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
                         aria-controls="mainNav" aria-expanded="false" aria-label="Открыть навигацию">
                     <span class="navbar-toggler-icon"></span>
@@ -40,6 +40,10 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
+                                <a class="nav-link @Active("Messages")"
+                                   asp-controller="Messages" asp-action="Index">Сообщения</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link @Active("Friends")"
                                    asp-controller="Friends" asp-action="Index">Друзья</a>
                             </li>
@@ -49,7 +53,7 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @Active("Chat")"
-                                   asp-controller="Chat" asp-action="Index">Чат</a>
+                                   asp-controller="Chat" asp-action="Index">Общий чат</a>
                             </li>
                             @if (User.IsInRole("Admin"))
                             {
@@ -98,7 +102,7 @@
     <footer class="footer py-3 text-center text-muted small">
         <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2">
             <span>&copy; @DateTime.Now.Year FridmakWeb</span>
-            <span>ASP.NET Core MVC · PostgreSQL · WasmGate · Prometheus / Grafana</span>
+            <span>Fridmak Messenger · личные сообщения для друзей</span>
         </div>
     </footer>
 

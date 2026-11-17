@@ -19,7 +19,8 @@
 - Регистрация и логин, хеширование паролей через BCrypt.
 - Профиль пользователя: bio, редактирование данных, просмотр чужих профилей.
 - Друзья: поиск пользователей, заявки, принятие/отклонение, список друзей и удаление.
-- Чат: отправка, редактирование и удаление сообщений, история.
+- Личные сообщения: диалоги между друзьями, история, непрочитанные.
+- Общий чат: отправка, редактирование и удаление сообщений, история.
 - Чат-боты: цензор, помощник, мем-бот. Боты находятся в чате как обычные пользователи.
 - Модерация: список запрещённых слов в `Resources/BannedChatWords.txt`.
 - Rate limiting: настраиваемый лимит на IP (по умолчанию 1000 запросов в минуту), ответ 429.
@@ -48,13 +49,15 @@ Controllers/
   Error/      страницы ошибок
   Friends/    друзья и заявки
   Home/       главная, about, error
+  Messages/   личные переписки
   Profile/    профиль и редактирование
 
-Models/                User, Friendship, Chat/ChatMessage, ViewModels/
+Models/                User, Friendship, Chat/ChatMessage, Messaging/, ViewModels/
 Data/                  AppDbContext
 Services/
   Users/               UserService
   Friends/             FriendshipService
+  Messaging/           ConversationService
   Seed/                AdminSeeder
   Observability/       AppMetrics, PrometheusMetricsService
   Chat/                ChatService, ChatMessageProcessor, ChatSessionManager,
@@ -63,10 +66,10 @@ Services/
                        CensorshipBot, HelpBot, MemeBot
 
 Options/               BotOptions, RateLimitOptions, IpFilterOptions, SeedOptions,
-                       MetricsOptions, PrometheusOptions
+                       MetricsOptions, PrometheusOptions, AuthOptions
 Extensions/            ClaimsPrincipalExtensions, DatabaseExtensions
 Middleware/            IpFilterMiddleware, RateLimitMiddleware
-deploy/                wasmgate/, observability/{prometheus,grafana}
+deploy/                wasmgate/, wasmgate-cp/, observability/, caddy/
 Migrations/            миграции EF Core
 ```
 
@@ -119,6 +122,8 @@ dotnet ef database update
 
 Нужен Docker Desktop с Linux-контейнерами.
 
+Для облака и HTTPS — отдельная инструкция: [`docs/cloud-deployment.md`](docs/cloud-deployment.md).
+
 Стек:
 
 ```text
@@ -158,6 +163,7 @@ docker compose up --build -d
 | Что | Адрес |
 |---|---|
 | Приложение через WasmGate | http://localhost:8081 |
+| Личные сообщения | http://localhost:8081/Messages |
 | Приложение напрямую (debug) | http://localhost:8082 |
 | Grafana | http://localhost:3000 |
 | Prometheus | http://localhost:9091 |
@@ -248,7 +254,7 @@ SELECT "Id", "Username", "Role" FROM "Users" WHERE "Username" = 'твой_лог
 
 ## Дальнейшие шаги
 
-- Перевести чат на SignalR вместо polling — подробная инструкция в [`docs/signalr-migration.md`](docs/signalr-migration.md).
+- Перевести личные сообщения на SignalR — подробная инструкция в [`docs/signalr-migration.md`](docs/signalr-migration.md).
 - Добавить интеграционные тесты на контроллеры, middleware и права доступа.
 - Вынести rate limiter в Redis, чтобы лимит работал между репликами.
 - Опционально: ClickHouse для аналитики событий чата и админ-отчётов.

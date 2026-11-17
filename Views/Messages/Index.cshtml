@@ -1,0 +1,56 @@
+@using TestingAppWeb.Models.Messaging
+@model IReadOnlyList<ConversationDto>
+
+@{
+    ViewData["Title"] = "Сообщения";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Сообщения</h1>
+        <p class="page-subtitle">Личные переписки с друзьями.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Friends" asp-action="Search" class="btn btn-outline-primary">Найти друзей</a>
+        <a asp-controller="Chat" asp-action="Index" class="btn btn-outline-secondary">Общий чат</a>
+    </div>
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <h2 class="h5">Пока нет переписок</h2>
+            <p class="text-muted mb-3">Добавь друга и начни личную переписку.</p>
+            <a asp-controller="Friends" asp-action="Search" class="btn btn-primary">Найти друзей</a>
+        </div>
+    </div>
+}
+else
+{
+    foreach (var conversation in Model)
+    {
+        <a asp-action="Conversation"
+           asp-route-id="@conversation.Id"
+           class="card mb-2 text-decoration-none text-reset">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="avatar">@conversation.OtherUsername[0].ToString().ToUpper()</div>
+                <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <strong>@conversation.OtherUsername</strong>
+                        <small class="text-muted">@conversation.LastMessageAt.ToLocalTime().ToString("dd.MM HH:mm")</small>
+                    </div>
+                    <div class="text-muted text-truncate">
+                        @(string.IsNullOrWhiteSpace(conversation.LastMessageText)
+                            ? "Начните переписку"
+                            : conversation.LastMessageText)
+                    </div>
+                </div>
+                @if (conversation.UnreadCount > 0)
+                {
+                    <span class="badge rounded-pill bg-primary">@conversation.UnreadCount</span>
+                }
+            </div>
+        </a>
+    }
+}

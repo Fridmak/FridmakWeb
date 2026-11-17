@@ -39,6 +39,7 @@ services:
       RateLimit__Enabled: "false"
       IpFilter__Enabled: "false"
       Metrics__Token: ${METRICS_TOKEN:?set METRICS_TOKEN in .env}
+      Auth__CookieSecure: ${AUTH_COOKIE_SECURE:-false}
       Prometheus__BaseUrl: http://prometheus:9090
       Prometheus__GrafanaUrl: http://localhost:3000
     ports:
@@ -154,7 +155,7 @@ services:
       - wasmgate-certs:/certs:ro
       - wasmgate-state:/data
     ports:
-      - "8081:8080"
+      - "${WASMGATE_BIND:-0.0.0.0}:8081:8080"
       - "127.0.0.1:19099:9099"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -H \"Authorization: Bearer $$WASMGATE_ADMIN_TOKEN\" http://127.0.0.1:9099/healthz >/dev/null"]

@@ -28,6 +28,8 @@ $values = [ordered]@{
     METRICS_TOKEN            = New-Secret
     GRAFANA_ADMIN_USER       = 'admin'
     GRAFANA_ADMIN_PASSWORD   = New-Secret
+    AUTH_COOKIE_SECURE       = 'false'
+    WASMGATE_BIND            = '0.0.0.0'
 }
 
 $envPath = Join-Path $root '.env'

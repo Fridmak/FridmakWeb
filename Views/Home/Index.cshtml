@@ -3,16 +3,16 @@
 }
 
 <section class="hero mb-4">
-    <h1>FridmakWeb</h1>
+    <h1>Fridmak Messenger</h1>
     <p class="lead mt-3 mb-4">
-        Социальный чат на ASP.NET Core MVC: профили, друзья, сообщения, боты
-        и наблюдаемый edge через WasmGate, Prometheus и Grafana.
+        Личные сообщения для друзей: добавляйте людей в друзья, начинайте переписку
+        и оставайтесь на связи.
     </p>
 
     <div class="d-flex flex-wrap gap-2">
         @if (User.Identity?.IsAuthenticated == true)
         {
-            <a asp-controller="Chat" asp-action="Index" class="btn btn-light px-4">Открыть чат</a>
+            <a asp-controller="Messages" asp-action="Index" class="btn btn-light px-4">Открыть сообщения</a>
             <a asp-controller="Friends" asp-action="Index" class="btn btn-outline-light px-4">Мои друзья</a>
         }
         else
@@ -26,11 +26,11 @@
 <div class="row g-3">
     <div class="col-md-4">
         <div class="feature-card">
-            <h3>Чат</h3>
-            <p>Общая комната, история сообщений, редактирование и удаление своих сообщений.</p>
+            <h3>Личные сообщения</h3>
+            <p>Переписка один на один, история сообщений и счётчик непрочитанных.</p>
             @if (User.Identity?.IsAuthenticated == true)
             {
-                <a asp-controller="Chat" asp-action="Index" class="btn btn-sm btn-outline-primary mt-3">Перейти</a>
+                <a asp-controller="Messages" asp-action="Index" class="btn btn-sm btn-outline-primary mt-3">К сообщениям</a>
             }
         </div>
     </div>
@@ -38,7 +38,7 @@
     <div class="col-md-4">
         <div class="feature-card">
             <h3>Друзья</h3>
-            <p>Поиск пользователей, заявки, принятие и удаление из друзей — без глобальных списков.</p>
+            <p>Поиск людей, заявки в друзья и быстрый переход к переписке.</p>
             @if (User.Identity?.IsAuthenticated == true)
             {
                 <a asp-controller="Friends" asp-action="Search" class="btn btn-sm btn-outline-primary mt-3">Найти людей</a>
@@ -48,11 +48,11 @@
 
     <div class="col-md-4">
         <div class="feature-card">
-            <h3>Наблюдаемость</h3>
-            <p>WasmGate на edge, метрики приложения и edge в Prometheus, готовый дашборд в Grafana.</p>
-            @if (User.IsInRole("Admin"))
+            <h3>Общий чат</h3>
+            <p>Небольшая общая комната с ботами — просто для настроения.</p>
+            @if (User.Identity?.IsAuthenticated == true)
             {
-                <a asp-controller="Admin" asp-action="Metrics" class="btn btn-sm btn-outline-primary mt-3">Метрики</a>
+                <a asp-controller="Chat" asp-action="Index" class="btn btn-sm btn-outline-primary mt-3">Открыть чат</a>
             }
         </div>
     </div>

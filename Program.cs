@@ -9,6 +9,7 @@ using TestingAppWeb.Middleware;
 using TestingAppWeb.MiddleWare;
 using TestingAppWeb.Options;
 using TestingAppWeb.Services.Friends;
+using TestingAppWeb.Services.Messaging;
 using TestingAppWeb.Services.Observability;
 using TestingAppWeb.Services.Seed;
 using TestingAppWeb.Services.Users;
@@ -50,6 +51,10 @@ builder.Services
     .Bind(builder.Configuration.GetSection(SeedOptions.SectionName))
     .ValidateOnStart();
 
+var authOptions = builder.Configuration
+    .GetSection(AuthOptions.SectionName)
+    .Get<AuthOptions>() ?? new AuthOptions();
+
 builder.Services
     .AddOptions<MetricsOptions>()
     .Bind(builder.Configuration.GetSection(MetricsOptions.SectionName))
@@ -83,13 +88,16 @@ builder.Services
         options.AccessDeniedPath = "/Account/AccessDenied";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SecurePolicy = authOptions.CookieSecure
+            ? CookieSecurePolicy.Always
+            : CookieSecurePolicy.SameAsRequest;
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
         options.SlidingExpiration = true;
     });
 
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IFriendshipService, FriendshipService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<ChatBotHandler>();

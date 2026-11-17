@@ -1,56 +1,40 @@
 ﻿@{
-    ViewData["Title"] = "About me";
+    ViewData["Title"] = "О проекте";
 }
 
-<link rel="stylesheet" href="~/css/text.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-
-<div class="about-container">
-    <h1>@ViewData["Title"]</h1>
-
-    <p>
-        Здравствуйте, меня зовут Андрей. Обучаюсь на 3 курсе в Екатеринбурге на ФИИТ. За эти 2 года сделал немало проектов на C# и Python. Хорошо знаком с Git и активно пользуюсь GitHub.
+<div class="hero mb-4">
+    <h1>Fridmak Messenger</h1>
+    <p class="lead mt-3 mb-0">
+        Небольшой мессенджер для друзей: без лишнего шума и сложных настроек.
     </p>
+</div>
 
-    <h2>Навыки в C#</h2>
-    <ul>
-        <li><strong>ASP.NET</strong>: опыт создания сайтов на основе MVC и без; умею составлять pipeline, подключать авторизацию, аутентификацию, писать middleware, создавать API, работать с Razor. Фокус на бэкенде, базовое понимание фронтенда.</li>
-        <li>
-            <strong>ООП</strong>:
-            <ul>
-                <li>SOLID (SRP, OCP, LSP, ISP, DIP)</li>
-                <li>DRY, KISS, YAGNI</li>
-                <li>Паттерны: Observer, Factory Method и другие</li>
-                <li>Инкапсуляция, наследование, полиморфизм, абстракция</li>
-            </ul>
-        </li>
-        <li><strong>Unity</strong>: создал 3 игры, разбираюсь на среднем уровне.</li>
-        <li><strong>WebSocket Server</strong>: делал для чата в приложении на MAUI.</li>
-        <li><strong>MAUI</strong>: разрабатывал приложение с картой для поиска людей рядом с общими интересами в музыке.</li>
-        <li><strong>Web Server</strong>: до ASP.NET писал свой простой сервер на сокетах.</li>
-    </ul>
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="feature-card h-100">
+            <h3>Личные сообщения</h3>
+            <p>Переписка доступна только друзьям. История сохраняется, непрочитанные видны в списке диалогов.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card h-100">
+            <h3>Друзья</h3>
+            <p>Найдите человека по имени, отправьте заявку и начните общение после подтверждения.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card h-100">
+            <h3>Общий чат</h3>
+            <p>Небольшая общая комната с ботами — для тех, кто хочет просто поболтать.</p>
+        </div>
+    </div>
+</div>
 
-    <h2>Навыки в Python</h2>
-    <ul>
-        <li>Хорошее знание языка, ООП.</li>
-        <li>Тестирование с помощью <code>pytest</code>.</li>
-        <li>Работа с SQL (sqlite, PostgreSQL).</li>
-        <li>Быстро осваиваю новые библиотеки и готов к обучению.</li>
-    </ul>
-
-    <h2>Дополнительно</h2>
-    <ul>
-        <li>Опыт работы с базами данных (в основном в ASP.NET).</li>
-        <li>Умею работать в команде: слушать, предлагать, договариваться.</li>
-        <li>Стараюсь соблюдать дедлайны.</li>
-        <li>Часто беру роль бэкенда, иногда — командного менеджера.</li>
-    </ul>
-
-    <blockquote>
-        “Если хочешь сделать мир лучше — начни с одной красивой строчки кода.”
-    </blockquote>
-
-    <p>
-        <strong>Telegram:</strong> <a href="https://t.me/MrFridmak" target="_blank">@@MrFridmak</a>
-    </p>
+<div class="card mt-4">
+    <div class="card-body">
+        <h2 class="h5">Связь</h2>
+        <p class="text-muted mb-0">
+            Telegram: <a href="https://t.me/MrFridmak" target="_blank" rel="noopener">@@MrFridmak</a>
+        </p>
+    </div>
 </div>

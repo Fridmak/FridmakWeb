@@ -1,0 +1,59 @@
+@using TestingAppWeb.Models.Messaging
+@model ConversationPageViewModel
+
+@{
+    ViewData["Title"] = Model.Conversation.OtherUsername;
+    var lastMessageId = Model.Messages.LastOrDefault()?.Id ?? 0;
+}
+
+<div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="К сообщениям">←</a>
+        <div class="avatar">@Model.Conversation.OtherUsername[0].ToString().ToUpper()</div>
+        <div>
+            <h1 class="h4 mb-0">@Model.Conversation.OtherUsername</h1>
+            <a asp-controller="Profile"
+               asp-action="Index"
+               asp-route-userId="@Model.Conversation.OtherUserId"
+               class="small text-decoration-none">
+                Открыть профиль
+            </a>
+        </div>
+    </div>
+</div>
+
+<div id="message-thread"
+     class="card"
+     data-conversation-id="@Model.Conversation.Id"
+     data-current-user-id="@Model.CurrentUserId"
+     data-last-message-id="@lastMessageId">
+    <div class="card-body">
+        <ul id="message-list" class="message-list">
+            @foreach (var message in Model.Messages)
+            {
+                <li class="message-row @(message.SenderId == Model.CurrentUserId ? "mine" : "theirs")"
+                    data-id="@message.Id">
+                    <div class="bubble">
+                        <div class="text">@message.Text</div>
+                        <div class="meta">@message.SentAt.ToLocalTime().ToString("HH:mm")</div>
+                    </div>
+                </li>
+            }
+        </ul>
+
+        <form id="message-form" class="d-flex gap-2 mt-3">
+            @Html.AntiForgeryToken()
+            <input id="message-input"
+                   class="form-control"
+                   type="text"
+                   maxlength="2000"
+                   placeholder="Написать сообщение..."
+                   autocomplete="off"
+                   required />
+            <button type="submit" class="btn btn-primary px-4">Отправить</button>
+        </form>
+    </div>
+</div>
+
+<link rel="stylesheet" href="~/css/messages.css" asp-append-version="true" />
+<script type="module" src="~/js/messages/conversation.js" asp-append-version="true"></script>

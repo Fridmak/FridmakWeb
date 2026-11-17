@@ -122,6 +122,12 @@
                     else if (Model.FriendshipStatus == FriendshipStatus.Accepted)
                     {
                         <div class="alert alert-success mt-3 mb-2">Вы друзья.</div>
+                        <a asp-controller="Messages"
+                           asp-action="Start"
+                           asp-route-userId="@Model.UserId"
+                           class="btn btn-primary w-100 mb-2">
+                            Написать сообщение
+                        </a>
                         <form asp-controller="Friends" asp-action="RemoveFriend" method="post">
                             <input type="hidden" name="id" value="@Model.FriendshipId" />
                             <button type="submit" class="btn btn-outline-danger w-100">Удалить из друзей</button>

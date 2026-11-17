@@ -46,10 +46,18 @@
                                 Друзья с @friend.FriendsSince.ToLocalTime().ToString("dd.MM.yyyy")
                             </div>
                         </div>
-                        <form asp-action="RemoveFriend" method="post">
-                            <input type="hidden" name="id" value="@friend.FriendshipId" />
-                            <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
-                        </form>
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Messages"
+                               asp-action="Start"
+                               asp-route-userId="@friend.UserId"
+                               class="btn btn-primary btn-sm">
+                                Написать
+                            </a>
+                            <form asp-action="RemoveFriend" method="post">
+                                <input type="hidden" name="id" value="@friend.FriendshipId" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             }
