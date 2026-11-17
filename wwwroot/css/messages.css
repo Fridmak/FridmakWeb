@@ -1,31 +1,15 @@
-.avatar {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: 700;
-    background: linear-gradient(135deg, #4f46e5, #0ea5e9);
-}
-
-.min-width-0 {
-    min-width: 0;
-}
-
 .message-list {
     list-style: none;
     margin: 0;
-    padding: 0.5rem;
+    padding: 0.75rem;
     min-height: 45vh;
     max-height: 62vh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    background: #f8fafc;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: 0.85rem;
 }
 
@@ -41,15 +25,17 @@
     max-width: 78%;
     padding: 0.6rem 0.85rem;
     border-radius: 1rem;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 
 .message-row.mine .bubble {
-    background: #4f46e5;
-    border-color: #4f46e5;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand));
+    border-color: transparent;
     color: #fff;
+    box-shadow: 0 8px 24px rgba(109, 40, 217, 0.28);
 }
 
 .bubble .text {
@@ -59,7 +45,7 @@
 
 .bubble .meta {
     font-size: 0.7rem;
-    opacity: 0.65;
+    opacity: 0.68;
     margin-top: 0.2rem;
     text-align: right;
 }

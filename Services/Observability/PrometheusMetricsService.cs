@@ -8,7 +8,9 @@ namespace TestingAppWeb.Services.Observability
         public DateTimeOffset CollectedAt { get; init; } = DateTimeOffset.UtcNow;
         public double? HttpRequestsPerSecond { get; init; }
         public double? ChatMessagesPerMinute { get; init; }
+        public double? DirectMessagesPerMinute { get; init; }
         public double? ActiveChatSessions { get; init; }
+        public double? SignalRConnections { get; init; }
         public double? WasmGateActiveConnections { get; init; }
         public double? WasmGateRateRejectedPerMinute { get; init; }
         public double? WasmGateRelayedBytesPerSecond { get; init; }
@@ -17,7 +19,9 @@ namespace TestingAppWeb.Services.Observability
 
         public bool HasData => HttpRequestsPerSecond.HasValue ||
                                ChatMessagesPerMinute.HasValue ||
+                               DirectMessagesPerMinute.HasValue ||
                                ActiveChatSessions.HasValue ||
+                               SignalRConnections.HasValue ||
                                WasmGateActiveConnections.HasValue;
     }
 
@@ -51,8 +55,14 @@ namespace TestingAppWeb.Services.Observability
                 ChatMessages = QueryAsync(
                     "sum(rate(fridmak_chat_messages_total[5m])) * 60",
                     cancellationToken),
+                DirectMessages = QueryAsync(
+                    "sum(rate(fridmak_direct_messages_total[5m])) * 60",
+                    cancellationToken),
                 ActiveSessions = QueryAsync(
                     "sum(fridmak_chat_active_sessions)",
+                    cancellationToken),
+                SignalRConnections = QueryAsync(
+                    "sum(fridmak_signalr_connections)",
                     cancellationToken),
                 WasmGateActive = QueryAsync(
                     "sum(wasmgate_connections_active)",
@@ -75,7 +85,9 @@ namespace TestingAppWeb.Services.Observability
             {
                 HttpRequestsPerSecond = await queries.HttpRequests,
                 ChatMessagesPerMinute = await queries.ChatMessages,
+                DirectMessagesPerMinute = await queries.DirectMessages,
                 ActiveChatSessions = await queries.ActiveSessions,
+                SignalRConnections = await queries.SignalRConnections,
                 WasmGateActiveConnections = await queries.WasmGateActive,
                 WasmGateRateRejectedPerMinute = await queries.WasmGateRejected,
                 WasmGateRelayedBytesPerSecond = await queries.WasmGateBytes,

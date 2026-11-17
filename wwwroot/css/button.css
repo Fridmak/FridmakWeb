@@ -2,61 +2,64 @@
     display: inline-block;
     padding: 12px 24px;
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     border: none;
     border-radius: 8px;
     transition: all 0.3s ease;
     user-select: none;
     box-sizing: border-box;
+    text-decoration: none;
 }
 
     .btn-custom:focus, .btn-custom:active:focus {
         outline: none;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        box-shadow: 0 0 0 0.2rem var(--brand-soft);
     }
 
 .btn-primary {
-    background-color: #007bff;
-    color: white;
+    background-color: var(--brand-2);
+    color: #fff;
 }
 
     .btn-primary:hover {
-        background-color: #0069d9;
+        background-color: var(--brand);
+        color: #fff;
         transform: translateY(-1px);
     }
 
     .btn-primary:active {
-        background-color: #0062cc;
+        background-color: var(--brand-2);
         transform: translateY(0);
     }
 
 .btn-secondary {
-    background-color: #6c757d;
-    color: white;
+    background-color: var(--surface-2);
+    color: var(--text);
 }
 
     .btn-secondary:hover {
-        background-color: #5a6268;
+        background-color: var(--surface-3);
+        color: var(--text);
         transform: translateY(-1px);
     }
 
     .btn-secondary:active {
-        background-color: #545b62;
+        background-color: var(--surface-2);
         transform: translateY(0);
     }
 
 .btn-outline {
     background-color: transparent;
-    border: 2px solid #007bff;
-    color: #007bff;
+    border: 2px solid var(--brand);
+    color: var(--brand);
     padding: 10px 22px;
 }
 
     .btn-outline:hover {
-        background-color: #007bff;
-        color: white;
-        border-color: #007bff;
+        background-color: var(--brand);
+        color: #fff;
+        border-color: var(--brand);
     }
 
 .btn-custom:disabled {

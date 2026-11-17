@@ -10,6 +10,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] — Fridmak</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('theme');
+            const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
@@ -21,10 +28,19 @@
         <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-3">
             <div class="container">
                 <a class="navbar-brand" asp-controller="Home" asp-action="Index">Fridmak</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
-                        aria-controls="mainNav" aria-expanded="false" aria-label="Открыть навигацию">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+
+                <div class="d-flex align-items-center gap-2 ms-auto order-lg-last">
+                    <button id="theme-toggle"
+                            class="btn btn-sm theme-toggle"
+                            type="button"
+                            aria-label="Переключить тему">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                            aria-controls="mainNav" aria-expanded="false" aria-label="Открыть навигацию">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
 
                 <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
@@ -101,7 +117,7 @@
 
     <footer class="footer py-3 text-center text-muted small">
         <div class="container d-flex flex-column flex-sm-row justify-content-between gap-2">
-            <span>&copy; @DateTime.Now.Year FridmakWeb</span>
+            <span>&copy; @DateTime.Now.Year Fridmak</span>
             <span>Fridmak Messenger · личные сообщения для друзей</span>
         </div>
     </footer>
@@ -109,6 +125,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,6 +1,6 @@
 ﻿.chat-message {
     position: relative;
-    background-color: #f1f1f1;
+    background: var(--surface-2);
     padding: 10px 10px;
     border-radius: 8px;
     word-wrap: break-word;
@@ -13,7 +13,8 @@
 
 .message-content {
     padding: 10px;
-    background-color: #f9f9f9;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 6px;
     margin-bottom: 10px;
     min-height: auto;
@@ -28,11 +29,11 @@
     background: none;
     border: none;
     font-size: 18px;
-    color: #888;
+    color: var(--muted);
     cursor: pointer;
     transition: color 0.3s ease;
 }
 
     .message-options:hover {
-        color: #333;
+        color: var(--text);
     }

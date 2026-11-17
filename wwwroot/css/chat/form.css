@@ -8,20 +8,23 @@
         flex: 1;
         padding: 10px 12px;
         font-size: 14px;
-        border: 1px solid #ccc;
+        background: var(--input-bg);
+        color: var(--input-text);
+        border: 1px solid var(--border);
         border-radius: 6px;
         outline: none;
         transition: border-color 0.3s ease;
     }
 
         #chat-form input[type="text"]:focus {
-            border-color: #007bff;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 0.2rem var(--brand-soft);
         }
 
     #chat-form button {
         padding: 10px 16px;
-        background-color: #007bff;
-        color: white;
+        background-color: var(--brand-2);
+        color: #fff;
         border: none;
         border-radius: 6px;
         cursor: pointer;
@@ -30,5 +33,5 @@
     }
 
         #chat-form button:hover {
-            background-color: #0056b3;
+            background-color: var(--brand);
         }

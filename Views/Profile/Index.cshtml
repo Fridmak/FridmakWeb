@@ -15,7 +15,7 @@
             }
 
             <div class="card shadow-lg border-0 rounded-4">
-                <div class="bg-gradient text-white text-center py-4">
+                <div class="profile-header text-white text-center py-4">
                     <h1 class="mb-0">@Model.Username</h1>
                     @if (!string.IsNullOrWhiteSpace(Model.Role))
                     {
@@ -148,18 +148,3 @@
 </div>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-
-<style>
-    .bg-gradient {
-        background: linear-gradient(135deg, #6f42c1, #0d6efd);
-    }
-
-    .card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-</style>

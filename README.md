@@ -19,7 +19,7 @@
 - Регистрация и логин, хеширование паролей через BCrypt.
 - Профиль пользователя: bio, редактирование данных, просмотр чужих профилей.
 - Друзья: поиск пользователей, заявки, принятие/отклонение, список друзей и удаление.
-- Личные сообщения: диалоги между друзьями, история, непрочитанные.
+- Личные сообщения: диалоги между друзьями, история, непрочитанные, real-time через SignalR.
 - Общий чат: отправка, редактирование и удаление сообщений, история.
 - Чат-боты: цензор, помощник, мем-бот. Боты находятся в чате как обычные пользователи.
 - Модерация: список запрещённых слов в `Resources/BannedChatWords.txt`.
@@ -45,13 +45,14 @@
 Controllers/
   Account/    вход, регистрация, выход
   Admin/      админка, боты, метрики
-  Chat/       чат
+  Chat/       общий чат
   Error/      страницы ошибок
   Friends/    друзья и заявки
   Home/       главная, about, error
   Messages/   личные переписки
   Profile/    профиль и редактирование
 
+Hubs/                  MessagesHub (SignalR)
 Models/                User, Friendship, Chat/ChatMessage, Messaging/, ViewModels/
 Data/                  AppDbContext
 Services/
@@ -254,7 +255,7 @@ SELECT "Id", "Username", "Role" FROM "Users" WHERE "Username" = 'твой_лог
 
 ## Дальнейшие шаги
 
-- Перевести личные сообщения на SignalR — подробная инструкция в [`docs/signalr-migration.md`](docs/signalr-migration.md).
+- Перевести общий чат на SignalR — инструкция в [`docs/signalr.md`](docs/signalr.md) и [`docs/signalr-migration.md`](docs/signalr-migration.md).
 - Добавить интеграционные тесты на контроллеры, middleware и права доступа.
 - Вынести rate limiter в Redis, чтобы лимит работал между репликами.
 - Опционально: ClickHouse для аналитики событий чата и админ-отчётов.

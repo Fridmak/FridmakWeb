@@ -13,8 +13,16 @@ namespace TestingAppWeb.Services.Observability
             "fridmak_users_registered_total",
             "Successfully registered users.");
 
+        public Counter DirectMessages { get; } = Metrics.CreateCounter(
+            "fridmak_direct_messages_total",
+            "Direct messages sent.");
+
         public Gauge ActiveChatSessions { get; } = Metrics.CreateGauge(
             "fridmak_chat_active_sessions",
             "Active in-memory chat sessions.");
+
+        public Gauge SignalRConnections { get; } = Metrics.CreateGauge(
+            "fridmak_signalr_connections",
+            "Active SignalR connections.");
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TestingAppWeb.Data;
 using TestingAppWeb.Models;
 using TestingAppWeb.Models.Messaging;
+using TestingAppWeb.Services.Observability;
 
 namespace TestingAppWeb.Services.Messaging
 {
@@ -47,13 +48,16 @@ namespace TestingAppWeb.Services.Messaging
 
         private readonly AppDbContext _context;
         private readonly ILogger<ConversationService> _logger;
+        private readonly AppMetrics _metrics;
 
         public ConversationService(
             AppDbContext context,
-            ILogger<ConversationService> logger)
+            ILogger<ConversationService> logger,
+            AppMetrics metrics)
         {
             _context = context;
             _logger = logger;
+            _metrics = metrics;
         }
 
         public async Task<ConversationDetailsDto?> GetOrCreateAsync(
@@ -290,6 +294,7 @@ namespace TestingAppWeb.Services.Messaging
             conversation.LastMessageAt = message.SentAt;
             _context.DirectMessages.Add(message);
             await _context.SaveChangesAsync(cancellationToken);
+            _metrics.DirectMessages.Inc();
 
             return new DirectMessageDto
             {

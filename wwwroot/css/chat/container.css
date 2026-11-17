@@ -9,9 +9,9 @@
 .chat-container {
     flex: 1;
     overflow-y: auto;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border);
     padding: 10px;
-    background-color: #fff;
+    background: var(--surface);
     border-radius: 6px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow);
 }

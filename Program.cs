@@ -5,6 +5,7 @@ using Prometheus;
 using System.Text.Json.Serialization;
 using TestingAppWeb.Data;
 using TestingAppWeb.Extensions;
+using TestingAppWeb.Hubs;
 using TestingAppWeb.Middleware;
 using TestingAppWeb.MiddleWare;
 using TestingAppWeb.Options;
@@ -79,6 +80,13 @@ builder.Services.AddHttpClient<IPrometheusMetricsService, PrometheusMetricsServi
         client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
         client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
     });
+
+builder.Services.AddSignalR(options =>
+{
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    options.MaximumReceiveMessageSize = 32 * 1024;
+});
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -167,6 +175,7 @@ app.UseWhen(
     });
 
 app.MapMetrics("/metrics");
+app.MapHub<MessagesHub>("/hubs/messages");
 
 app.MapGet("/health", async (AppDbContext db) =>
 {
